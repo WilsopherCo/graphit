@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Graphit — Graph Anything</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #09090f; --surface: #111118; --surface2: #1a1a26; --surface3: #20202e;
+  --border: #2a2a3a; --border2: #3a3a50;
+  --accent: #e8c84a; --accent-dim: rgba(232,200,74,0.12); --accent2: #5b8cff;
+  --text: #e8e6f0; --text2: #b0aec8; --muted: #6b6a80;
+  --success: #4af0a0; --error: #f05a4a; --error-dim: rgba(240,90,74,0.1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-weight: 300; min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(91,140,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(91,140,255,0.035) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+
+/* ── HEADER ── */
+header { position: relative; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; height: 58px; border-bottom: 1px solid var(--border); background: rgba(9,9,15,0.95); backdrop-filter: blur(10px); flex-shrink: 0; }
+.logo { display: flex; align-items: baseline; gap: 8px; }
+.logo-name { font-family: 'Playfair Display', serif; font-weight: 900; font-size: 1.5rem; color: var(--accent); letter-spacing: -0.5px; }
+.logo-tag { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; border: 1px solid var(--border); padding: 2px 6px; border-radius: 3px; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+.status-badge { display: flex; align-items: center; gap: 7px; padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; color: var(--muted); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 5px var(--success); animation: pulse 2.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+.graphs-counter { font-family: 'IBM Plex Mono', monospace; font-size: 0.63rem; color: var(--muted); padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; }
+
+/* ── MAIN LAYOUT ── */
+main { position: relative; z-index: 1; flex: 1; display: grid; grid-template-columns: 340px 1fr; overflow: hidden; height: calc(100vh - 58px); }
+
+/* ── LEFT PANEL ── */
+.left-panel { display: flex; flex-direction: column; border-right: 1px solid var(--border); background: var(--surface); overflow: hidden; }
+.panel-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.panel-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); }
+.clear-btn { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--muted); background: none; border: none; cursor: pointer; padding: 3px 8px; border-radius: 4px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+.clear-btn:hover { color: var(--error); background: var(--error-dim); }
+
+.chat-messages { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
+.welcome { display: flex; flex-direction: column; align-items: center; text-align: center; margin: auto; padding: 10px; }
+.welcome-icon { font-size: 2.2rem; margin-bottom: 14px; }
+.welcome h2 { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--text); margin-bottom: 6px; }
+.welcome p { font-size: 0.82rem; color: var(--muted); line-height: 1.6; max-width: 260px; margin-bottom: 18px; }
+.example-chips { display: flex; flex-direction: column; gap: 7px; width: 100%; text-align: left; }
+.chip { padding: 9px 13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; font-size: 0.76rem; color: var(--muted); cursor: pointer; transition: all 0.18s; line-height: 1.4; }
+.chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); transform: translateX(3px); }
+
+.message { display: flex; flex-direction: column; gap: 4px; animation: fadeUp 0.28s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.message.user .bubble { background: rgba(91,140,255,0.1); border: 1px solid rgba(91,140,255,0.22); align-self: flex-end; }
+.message.assistant .bubble { background: var(--surface2); border: 1px solid var(--border); align-self: flex-start; }
+.bubble { padding: 10px 13px; border-radius: 10px; font-size: 0.83rem; line-height: 1.55; max-width: 92%; }
+.msg-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding: 0 3px; }
+.message.user .msg-label { align-self: flex-end; }
+.error-bubble { background: var(--error-dim) !important; border-color: rgba(240,90,74,0.3) !important; color: var(--error) !important; }
+.thinking-dots { display: flex; gap: 4px; align-items: center; padding: 10px 13px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; width: fit-content; }
+.thinking-dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: tdBounce 1.2s infinite; }
+.thinking-dots span:nth-child(2){animation-delay:.18s} .thinking-dots span:nth-child(3){animation-delay:.36s}
+@keyframes tdBounce { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-6px);opacity:1} }
+
+.chat-input-area { padding: 14px 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+textarea { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'IBM Plex Sans', sans-serif; font-size: 0.84rem; font-weight: 300; padding: 11px 13px; resize: none; min-height: 46px; max-height: 110px; line-height: 1.5; transition: border-color 0.2s; outline: none; }
+textarea:focus { border-color: var(--accent); }
+textarea::placeholder { color: var(--muted); }
+.send-btn { width: 44px; height: 44px; border-radius: 10px; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+.send-btn:hover:not(:disabled) { background: #f0d85a; transform: scale(1.05); box-shadow: 0 4px 16px rgba(232,200,74,0.3); }
+.send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.send-btn svg { width: 16px; height: 16px; color: #09090f; }
+.input-hint { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; color: var(--muted); text-align: center; }
+
+.history-strip { border-top: 1px solid var(--border); padding: 10px 14px; display: none; flex-direction: column; gap: 6px; flex-shrink: 0; max-height: 148px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.history-strip-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
+.history-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; cursor: pointer; transition: all 0.18s; font-size: 0.76rem; color: var(--text2); line-height: 1.3; }
+.history-item:hover { border-color: var(--border2); background: var(--surface3); color: var(--text); }
+.hist-icon { font-size: 0.85rem; flex-shrink: 0; }
+
+/* ── RIGHT PANEL ── */
+.graph-panel { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.graph-panel-header { padding: 14px 28px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.graph-title-area { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+#graph-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#graph-subtitle { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.graph-actions { display: flex; gap: 7px; flex-shrink: 0; margin-left: 16px; }
+.action-btn { padding: 6px 13px; background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: all 0.18s; white-space: nowrap; }
+.action-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.graph-canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 36px 40px; position: relative; overflow: hidden; }
+.empty-state { text-align: center; color: var(--muted); user-select: none; }
+.empty-icon { font-size: 2.8rem; opacity: 0.12; margin-bottom: 14px; display: block; font-family: monospace; letter-spacing: -3px; }
+.empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--muted); margin-bottom: 7px; }
+.empty-state p { font-size: 0.8rem; max-width: 300px; line-height: 1.6; margin: 0 auto; }
+.chart-wrapper { width: 100%; height: 100%; display: none; position: relative; }
+.loading-overlay { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(9,9,15,0.78); backdrop-filter: blur(6px); gap: 14px; z-index: 5; }
+.loading-spinner { width: 36px; height: 36px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.loading-text { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
+.loading-sub { font-size: 0.75rem; color: var(--muted); font-family: 'IBM Plex Sans', sans-serif; }
+
+#source-strip { padding: 9px 28px; border-top: 1px solid var(--border); display: none; align-items: flex-start; gap: 10px; background: rgba(17,17,24,0.9); flex-shrink: 0; }
+.source-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; flex-shrink: 0; margin-top: 2px; }
+#source-text { font-size: 0.75rem; color: var(--muted); font-style: italic; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-name">Graphit</span>
+    <span class="logo-tag">Beta</span>
+  </div>
+  <div class="header-right">
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      AI + Live Data
+    </div>
+    <div class="graphs-counter" id="graphs-counter">0 graphs made</div>
+  </div>
+</header>
+
+<main>
+  <div class="left-panel">
+    <div class="panel-header">
+      <span class="panel-label">// Graph Request</span>
+      <button class="clear-btn" onclick="clearChat()">Clear</button>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-icon">📈</div>
+        <h2>Graph anything.</h2>
+        <p>Describe any data relationship — Graphit finds the real numbers and builds a graph that's never existed before.</p>
+        <div class="example-chips">
+          <div class="chip" onclick="fillExample(this)">U.S. national debt vs. value of the dollar over time</div>
+          <div class="chip" onclick="fillExample(this)">Global average temperature anomaly since 1880</div>
+          <div class="chip" onclick="fillExample(this)">S&P 500 annual returns vs. U.S. inflation rate</div>
+          <div class="chip" onclick="fillExample(this)">World population growth by continent since 1950</div>
+          <div class="chip" onclick="fillExample(this)">Bitcoin price vs. gold price, last 5 years</div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <div class="input-row">
+        <textarea id="user-input" placeholder="Describe the graph you want to see..." rows="2" onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-hint">↵ Send · Shift+↵ New line · 5 free graphs/hour</div>
+    </div>
+    <div class="history-strip" id="history-strip">
+      <div class="history-strip-label">Recent graphs</div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <div class="graph-panel">
+    <div class="graph-panel-header">
+      <div class="graph-title-area">
+        <div id="graph-title">Awaiting your first request</div>
+        <div id="graph-subtitle">Type a description on the left to begin</div>
+      </div>
+      <div class="graph-actions">
+        <button class="action-btn" id="export-btn" onclick="downloadChart()" disabled>↓ PNG</button>
+        <button class="action-btn" id="csv-btn" onclick="exportCSV()" disabled>↓ CSV</button>
+      </div>
+    </div>
+    <div class="graph-canvas-area">
+      <div class="empty-state" id="empty-state">
+        <span class="empty-icon">▁▃▅▇▅▃▁</span>
+        <h3>Your graph will appear here</h3>
+        <p>Graphit searches the web for real data and renders a brand new visualization in seconds.</p>
+      </div>
+      <div class="chart-wrapper" id="chart-wrapper"><canvas id="my-chart"></canvas></div>
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loading-label">Searching for data...</div>
+        <div class="loading-sub" id="loading-sub">This may take a few seconds</div>
+      </div>
+    </div>
+    <div id="source-strip">
+      <span class="source-label">Sources</span>
+      <span id="source-text"></span>
+    </div>
+  </div>
+</main>
+
+<script>
+let chartInstance = null;
+let isLoading = false;
+let graphCount = 0;
+let lastChartData = null;
+let lastChartTitle = '';
+const graphHistory = [];
+
+/* ── TEXTAREA ── */
+const textarea = document.getElementById('user-input');
+textarea.addEventListener('input', () => {
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.min(textarea.scrollHeight, 110) + 'px';
+});
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function fillExample(el) { textarea.value = el.textContent.trim(); textarea.dispatchEvent(new Event('input')); textarea.focus(); }
+function clearChat() {
+  document.getElementById('chat-messages').innerHTML = `<div class="welcome" id="welcome-screen">
+    <div class="welcome-icon">📈</div><h2>Graph anything.</h2>
+    <p>Describe any data relationship — Graphit finds the real numbers and builds a graph that's never existed before.</p>
+    <div class="example-chips">
+      <div class="chip" onclick="fillExample(this)">U.S. national debt vs. value of the dollar over time</div>
+      <div class="chip" onclick="fillExample(this)">Global average temperature anomaly since 1880</div>
+      <div class="chip" onclick="fillExample(this)">S&P 500 annual returns vs. U.S. inflation rate</div>
+      <div class="chip" onclick="fillExample(this)">World population growth by continent since 1950</div>
+      <div class="chip" onclick="fillExample(this)">Bitcoin price vs. gold price, last 5 years</div>
+    </div></div>`;
+}
+
+/* ── SEND ── */
+async function sendMessage() {
+  const input = textarea.value.trim();
+  if (!input || isLoading) return;
+  document.getElementById('welcome-screen')?.remove();
+  addMessage('user', input);
+  textarea.value = ''; textarea.style.height = 'auto';
+  const thinkingEl = addThinking();
+  setLoading(true, 'Searching for data...', 'Using live web search · max 3 lookups');
+  try {
+    // ← calls YOUR backend, not Anthropic directly
+    const res = await fetch('/api/graph', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: input })
+    });
+    const result = await res.json();
+    thinkingEl.remove();
+
+    if (!res.ok || result.error) {
+      addMessage('assistant', result.error || 'Something went wrong. Please try again.', true);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true, 'Rendering graph...', 'Building your visualization');
+    addMessage('assistant', result.message);
+    setTimeout(() => {
+      renderChart(result.chartConfig, result.title, result.subtitle, result.rawData);
+      if (result.sources) showSources(result.sources);
+      addToHistory(input, result.title);
+      graphCount++;
+      document.getElementById('graphs-counter').textContent =
+        graphCount === 1 ? '1 graph made' : `${graphCount} graphs made`;
+      setLoading(false);
+    }, 300);
+  } catch (err) {
+    thinkingEl.remove();
+    addMessage('assistant', 'Connection error. Please check your internet and try again.', true);
+    setLoading(false);
+  }
+}
+
+/* ── RENDER ── */
+function renderChart(config, title, subtitle, rawData) {
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  const wrapper = document.getElementById('chart-wrapper');
+  wrapper.innerHTML = '<canvas id="my-chart"></canvas>';
+  const ctx = document.getElementById('my-chart').getContext('2d');
+  Chart.defaults.color = '#6b6a80'; Chart.defaults.borderColor = '#2a2a3a';
+  Chart.defaults.font.family = "'IBM Plex Mono', monospace"; Chart.defaults.font.size = 11;
+  config.options = config.options || {};
+  config.options.responsive = true; config.options.maintainAspectRatio = false;
+  config.options.animation = { duration: 800, easing: 'easeInOutQuart' };
+  config.options.plugins = config.options.plugins || {};
+  config.options.plugins.legend = { ...(config.options.plugins.legend||{}), labels: { color: '#9998b0', font: { family: "'IBM Plex Mono', monospace", size: 11 }, padding: 16, usePointStyle: true } };
+  config.options.plugins.tooltip = { backgroundColor: '#1a1a26', borderColor: '#3a3a50', borderWidth: 1, titleColor: '#e8c84a', bodyColor: '#e8e6f0', padding: 12, titleFont: { family: "'IBM Plex Mono', monospace", size: 11 }, bodyFont: { family: "'IBM Plex Sans', sans-serif", size: 12 }, cornerRadius: 8 };
+  const scaleStyle = { grid: { color: 'rgba(42,42,58,0.7)', drawBorder: false }, ticks: { color: '#5a5870', font: { family: "'IBM Plex Mono', monospace", size: 10 }, maxTicksLimit: 10 }, border: { color: '#2a2a3a', dash: [4,4] } };
+  config.options.scales = config.options.scales || {};
+  config.options.scales.x = { ...(config.options.scales.x||{}), ...scaleStyle };
+  config.options.scales.y = { ...(config.options.scales.y||{}), ...scaleStyle };
+  chartInstance = new Chart(ctx, config);
+  lastChartData = rawData || config.data; lastChartTitle = title || 'graph';
+  document.getElementById('empty-state').style.display = 'none';
+  wrapper.style.display = 'block';
+  document.getElementById('graph-title').textContent = title || 'Generated Graph';
+  document.getElementById('graph-subtitle').textContent = subtitle || '';
+  document.getElementById('export-btn').disabled = false;
+  document.getElementById('csv-btn').disabled = false;
+}
+
+/* ── EXPORTS ── */
+function downloadChart() {
+  if (!chartInstance) return;
+  const link = document.createElement('a');
+  link.download = `graphit-${lastChartTitle.replace(/\s+/g,'-').toLowerCase()}.png`;
+  link.href = document.getElementById('my-chart').toDataURL('image/png', 1.0);
+  link.click();
+}
+function exportCSV() {
+  if (!lastChartData) return;
+  const { labels, datasets } = lastChartData;
+  const header = ['Label', ...datasets.map(d => d.label || 'Value')].join(',');
+  const rows = labels.map((lbl, i) => [lbl, ...datasets.map(d => d.data[i] ?? '')].join(','));
+  const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
+  const link = document.createElement('a');
+  link.download = `graphit-${lastChartTitle.replace(/\s+/g,'-').toLowerCase()}.csv`;
+  link.href = URL.createObjectURL(blob); link.click();
+}
+
+/* ── HISTORY ── */
+function addToHistory(prompt, title) {
+  graphHistory.unshift({ prompt, title });
+  if (graphHistory.length > 5) graphHistory.pop();
+  const list = document.getElementById('history-list');
+  list.innerHTML = '';
+  graphHistory.forEach(item => {
+    const el = document.createElement('div'); el.className = 'history-item';
+    el.innerHTML = `<span class="hist-icon">📊</span><span>${escHtml(item.title || item.prompt)}</span>`;
+    el.onclick = () => { textarea.value = item.prompt; textarea.dispatchEvent(new Event('input')); textarea.focus(); };
+    list.appendChild(el);
+  });
+  document.getElementById('history-strip').style.display = 'flex';
+}
+
+/* ── SOURCES ── */
+function showSources(sources) {
+  document.getElementById('source-text').textContent = sources;
+  document.getElementById('source-strip').style.display = 'flex';
+}
+
+/* ── HELPERS ── */
+function addMessage(role, text, isError = false) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div'); div.className = `message ${role}`;
+  div.innerHTML = `<span class="msg-label">${role === 'user' ? 'You' : 'Graphit'}</span><div class="bubble ${isError ? 'error-bubble' : ''}">${escHtml(text)}</div>`;
+  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+function addThinking() {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div'); div.className = 'message assistant';
+  div.innerHTML = `<span class="msg-label">Graphit</span><div class="thinking-dots"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+function setLoading(state, label, sub) {
+  isLoading = state; document.getElementById('send-btn').disabled = state;
+  const overlay = document.getElementById('loading-overlay');
+  overlay.style.display = state ? 'flex' : 'none';
+  if (label) document.getElementById('loading-label').textContent = label;
+  if (sub) document.getElementById('loading-sub').textContent = sub;
+}
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

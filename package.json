@@ -1,0 +1,8 @@
+{
+  "name": "graphit",
+  "version": "1.0.0",
+  "description": "AI-powered graph generator",
+  "engines": {
+    "node": ">=18"
+  }
+}
