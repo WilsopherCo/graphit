@@ -24,7 +24,11 @@ const HEADERS = (key) => ({
 
 // Claude only needs to return raw data — no Chart.js boilerplate.
 // The frontend handles ALL styling. Saves ~650 output tokens per call.
-const SYSTEM_PROMPT = `You are Graphit. Search the web for real, accurate data then return ONLY valid JSON. No preamble. No markdown. No backticks. Start with { end with }.
+const SYSTEM_PROMPT = `You are Graphit. Search the web for real data, then return ONLY valid JSON. No preamble. No markdown. No backticks. Start with { end with }.
+
+CRITICAL: You will rarely get a perfect complete dataset from search results — that is expected. Build the best chart you can from whatever you find: snippets, summary statistics, partial tables, figures mentioned in articles, or well-known approximate values. Use round numbers and reasonable interpolation. A chart with approximate data is far more useful than an error.
+
+Only return {"error":"..."} if you find absolutely zero relevant numbers after searching.
 
 Return this exact shape:
 {
@@ -41,7 +45,7 @@ Return this exact shape:
 
 chartType must be one of: "line", "bar", "scatter".
 Use multiple objects in datasets for multi-series graphs.
-If data cannot be found: {"error": "brief explanation"}`;
+Aim for 10-30 datapoints per series.`;
 
 function calcCost(usage = {}) {
   return (
