@@ -1,10 +1,9 @@
 // api/graph.js — Graphit backend
-// Runs as a Vercel serverless function. Your API key never reaches the browser.
+// Claude now returns ONLY raw data (~200 tokens). Frontend builds the Chart.js config.
 
-// ── Simple in-memory rate limiter ──────────────────────────────────────────
 const rateMap = new Map();
 const MAX_REQUESTS = 5;
-const WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const WINDOW_MS = 60 * 60 * 1000;
 
 function isRateLimited(ip) {
   const now = Date.now();
@@ -15,114 +14,141 @@ function isRateLimited(ip) {
   return entry.count > MAX_REQUESTS;
 }
 
-// ── System prompt (cached by Anthropic after first call) ───────────────────
-const SYSTEM_PROMPT = `You are Graphit. Find real data and return ONLY a JSON object for Chart.js. No preamble, no markdown, no backticks.
+const MODEL = 'claude-haiku-4-5-20251001';
+const HEADERS = (key) => ({
+  'Content-Type': 'application/json',
+  'x-api-key': key,
+  'anthropic-version': '2023-06-01',
+  'anthropic-beta': 'prompt-caching-2024-07-31'
+});
 
-JSON format:
-{"title":"Graph title","subtitle":"Source & date range","message":"2-3 sentences on what the graph shows","sources":"Data sources used","rawData":{"labels":[...],"datasets":[{"label":"...","data":[...]}]},"chartConfig":{"type":"line","data":{"labels":[...],"datasets":[{"label":"...","data":[...],"borderColor":"#e8c84a","backgroundColor":"rgba(232,200,74,0.1)","tension":0.3,"fill":true,"pointRadius":3,"pointHoverRadius":6}]},"options":{"responsive":true,"maintainAspectRatio":false,"interaction":{"mode":"index","intersect":false},"plugins":{"legend":{"display":true},"tooltip":{"mode":"index"}},"scales":{"x":{"display":true},"y":{"display":true}}}}}
+// Claude only needs to return raw data — no Chart.js boilerplate.
+// The frontend handles ALL styling. Saves ~650 output tokens per call.
+const SYSTEM_PROMPT = `You are Graphit. Search the web for real, accurate data then return ONLY valid JSON. No preamble. No markdown. No backticks. Start with { end with }.
 
-Chart types: "line"=time series, "bar"=categories, "scatter"=correlation.
-Colors: 1st "#e8c84a"/"rgba(232,200,74,0.1)", 2nd "#5b8cff"/"rgba(91,140,255,0.1)", 3rd "#4af0a0"/"rgba(74,240,160,0.1)", 4th "#f05a4a"/"rgba(240,90,74,0.1)".
-On failure: {"error":"reason"}`;
+Return this exact shape:
+{
+  "title": "Short descriptive title",
+  "subtitle": "Source names and date range",
+  "message": "2-3 sentence insight about what this data shows",
+  "sources": "e.g. Federal Reserve FRED, World Bank, BLS.gov",
+  "chartType": "line",
+  "labels": ["2000", "2001", "2002"],
+  "datasets": [
+    { "label": "Series name", "data": [1.2, 1.5, 1.8] }
+  ]
+}
 
-// ── Main handler ────────────────────────────────────────────────────────────
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+chartType must be one of: "line", "bar", "scatter".
+Use multiple objects in datasets for multi-series graphs.
+If data cannot be found: {"error": "brief explanation"}`;
+
+function calcCost(usage = {}) {
+  return (
+    (usage.input_tokens                || 0) / 1_000_000 * 1.00 +
+    (usage.output_tokens               || 0) / 1_000_000 * 5.00 +
+    (usage.cache_read_input_tokens     || 0) / 1_000_000 * 0.10 +
+    (usage.cache_creation_input_tokens || 0) / 1_000_000 * 1.25
+  );
+}
+
+function extractJSON(text) {
+  const stripped = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+  try { return JSON.parse(stripped); } catch {}
+  const start = stripped.indexOf('{');
+  const end   = stripped.lastIndexOf('}');
+  if (start !== -1 && end > start) {
+    try { return JSON.parse(stripped.slice(start, end + 1)); } catch {}
   }
+  const matches = stripped.match(/\{[\s\S]+?\}/g) || [];
+  for (const m of [...matches].reverse()) {
+    try { const p = JSON.parse(m); if (p.labels || p.error) return p; } catch {}
+  }
+  return null;
+}
 
+async function callWithSearch(apiKey, prompt) {
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: HEADERS(apiKey),
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 800,
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+}
+
+async function callFixJSON(apiKey, brokenText) {
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: HEADERS(apiKey),
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 800,
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{
+        role: 'user',
+        content: `You returned malformed JSON. Previous response:\n\n${brokenText}\n\nReturn only valid JSON starting with { and ending with }. Nothing else.`
+      }]
+    })
+  });
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Rate limiting
-  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
-           || req.headers['x-real-ip']
-           || 'unknown';
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.headers['x-real-ip'] || 'unknown';
+  if (isRateLimited(ip)) return res.status(429).json({ error: "You've reached the limit of 5 free graphs per hour. Try again later." });
 
-  if (isRateLimited(ip)) {
-    return res.status(429).json({
-      error: "You've reached the limit of 5 free graphs per hour. Please try again later."
-    });
-  }
-
-  // Validate input
   const { prompt } = req.body || {};
-  if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 3) {
-    return res.status(400).json({ error: 'A graph description is required.' });
-  }
-  if (prompt.length > 500) {
-    return res.status(400).json({ error: 'Description too long (max 500 characters).' });
-  }
+  if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 3) return res.status(400).json({ error: 'A graph description is required.' });
+  if (prompt.length > 500) return res.status(400).json({ error: 'Description too long (max 500 characters).' });
 
-  // Check env var
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.error('ANTHROPIC_API_KEY is not set');
-    return res.status(500).json({ error: 'Server misconfiguration. Please contact support.' });
-  }
+  if (!apiKey) { console.error('ANTHROPIC_API_KEY not set'); return res.status(500).json({ error: 'Server misconfiguration.' }); }
 
-  // Forward to Anthropic
+  let totalCost = 0;
+
   try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'prompt-caching-2024-07-31'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
-        system: [
-          { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }
-        ],
-        tools: [
-          { type: 'web_search_20250305', name: 'web_search', max_uses: 3 }
-        ],
-        messages: [{ role: 'user', content: prompt.trim() }]
-      })
-    });
-
-    if (!anthropicRes.ok) {
-      const errBody = await anthropicRes.json().catch(() => ({}));
-      console.error('Anthropic error:', anthropicRes.status, errBody);
+    const r1 = await callWithSearch(apiKey, prompt.trim());
+    if (!r1.ok) {
+      const b = await r1.json().catch(() => ({}));
+      console.error('Anthropic error (attempt 1):', r1.status, b);
       return res.status(502).json({ error: 'AI service error. Please try again.' });
     }
+    const d1 = await r1.json();
+    totalCost += calcCost(d1.usage);
+    const text1 = (d1.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const parsed1 = text1 ? extractJSON(text1) : null;
 
-    const data = await anthropicRes.json();
+    if (parsed1 && !parsed1.error && parsed1.labels && parsed1.datasets) {
+      return res.status(200).json({ ...parsed1, estimatedCost: totalCost });
+    }
+    if (parsed1?.error) return res.status(422).json({ error: parsed1.error });
 
-    // Calculate real cost from token usage
-    let estimatedCost = 0;
-    if (data.usage) {
-      estimatedCost =
-        (data.usage.input_tokens                || 0) / 1_000_000 * 1.0  +
-        (data.usage.output_tokens               || 0) / 1_000_000 * 5.0  +
-        (data.usage.cache_read_input_tokens     || 0) / 1_000_000 * 0.10 +
-        (data.usage.cache_creation_input_tokens || 0) / 1_000_000 * 1.25;
+    // Attempt 2 — cheap fix-up, no web search
+    console.warn('Attempt 1 parse failed, running cheap fix-up...');
+    const r2 = await callFixJSON(apiKey, text1 || '(empty)');
+    if (!r2.ok) return res.status(502).json({ error: 'Could not generate graph. Try rephrasing your request.' });
+
+    const d2 = await r2.json();
+    totalCost += calcCost(d2.usage);
+    const text2 = (d2.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const parsed2 = text2 ? extractJSON(text2) : null;
+
+    if (parsed2 && !parsed2.error && parsed2.labels && parsed2.datasets) {
+      return res.status(200).json({ ...parsed2, estimatedCost: totalCost });
     }
 
-    const fullText = (data.content || [])
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('');
-
-    if (!fullText) return res.status(502).json({ error: 'No response from AI. Please try again.' });
-
-    const clean = fullText.replace(/```json|```/g, '').trim();
-    let parsed;
-    try {
-      parsed = JSON.parse(clean);
-    } catch {
-      const match = clean.match(/\{[\s\S]*\}/);
-      if (match) { try { parsed = JSON.parse(match[0]); } catch { return res.status(502).json({ error: 'Could not parse graph data. Try rephrasing.' }); } }
-      else return res.status(502).json({ error: 'Could not parse graph data. Try rephrasing.' });
-    }
-
-    if (parsed.error) return res.status(422).json({ error: parsed.error });
-
-    return res.status(200).json({ ...parsed, estimatedCost });
+    return res.status(422).json({
+      error: "Couldn't build a graph for that request. Try being more specific, e.g. 'U.S. GDP growth rate 2000–2024'."
+    });
 
   } catch (err) {
     console.error('Unexpected error:', err);
