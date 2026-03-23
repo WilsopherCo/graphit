@@ -534,14 +534,14 @@ async function sendMessage() {
     addMessage('assistant', result.message);
 
     setTimeout(() => {
-      renderChart(result.chartConfig, result.title, result.subtitle, result.rawData);
+      // New lean API returns { chartType, labels, datasets, title, subtitle, ... }
+      renderChart(result);
       if (result.sources) showSources(result.sources);
       addToHistory(input, result.title);
       graphCount++;
       document.getElementById('graphs-counter').textContent =
         graphCount === 1 ? '1 graph made' : `${graphCount} graphs made`;
       setLoading(false);
-      // show notification dot on graph tab if user is on request tab
       if (window.innerWidth < 1024 && !document.getElementById('graph-panel').classList.contains('active')) {
         document.getElementById('graph-tab-dot').style.display = 'block';
       }
@@ -554,32 +554,98 @@ async function sendMessage() {
   }
 }
 
-/* ── RENDER ── */
-function renderChart(config, title, subtitle, rawData) {
+/* ── CHART COLOR PALETTE ── */
+// All styling lives here, never sent to Claude — saves ~650 output tokens per graph
+const PALETTE = [
+  { border: '#e8c84a', bg: 'rgba(232,200,74,0.12)' },
+  { border: '#5b8cff', bg: 'rgba(91,140,255,0.12)'  },
+  { border: '#4af0a0', bg: 'rgba(74,240,160,0.12)'  },
+  { border: '#f05a4a', bg: 'rgba(240,90,74,0.12)'   },
+  { border: '#c084fc', bg: 'rgba(192,132,252,0.12)' },
+  { border: '#38bdf8', bg: 'rgba(56,189,248,0.12)'  },
+];
+
+const SCALE_STYLE = {
+  grid:   { color: 'rgba(42,42,58,0.7)', drawBorder: false },
+  ticks:  { color: '#5a5870', font: { family: "'IBM Plex Mono', monospace", size: 9 }, maxTicksLimit: 8 },
+  border: { color: '#2a2a3a', dash: [4,4] }
+};
+
+/* ── RENDER — builds full Chart.js config from lean API response ── */
+function renderChart(result) {
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+  const { chartType = 'line', labels = [], datasets = [], title, subtitle } = result;
+
+  // Apply colors and styling to each dataset — Claude never has to do this
+  const styledDatasets = datasets.map((ds, i) => {
+    const color = PALETTE[i % PALETTE.length];
+    const base = {
+      label:           ds.label || `Series ${i + 1}`,
+      data:            ds.data  || [],
+      borderColor:     color.border,
+      backgroundColor: color.bg,
+      borderWidth:     2,
+      pointRadius:     3,
+      pointHoverRadius: 6,
+      pointBackgroundColor: color.border,
+    };
+    if (chartType === 'line') {
+      base.tension = 0.3;
+      base.fill = datasets.length === 1; // only fill when single series
+    }
+    if (chartType === 'bar') {
+      base.borderRadius = 4;
+      base.borderSkipped = false;
+    }
+    return base;
+  });
+
+  const config = {
+    type: chartType,
+    data: { labels, datasets: styledDatasets },
+    options: {
+      responsive:          true,
+      maintainAspectRatio: false,
+      animation:           { duration: 700, easing: 'easeInOutQuart' },
+      interaction:         { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: datasets.length > 1,
+          labels:  { color: '#9998b0', font: { family: "'IBM Plex Mono', monospace", size: 10 }, padding: 12, usePointStyle: true }
+        },
+        tooltip: {
+          backgroundColor: '#1a1a26', borderColor: '#3a3a50', borderWidth: 1,
+          titleColor: '#e8c84a', bodyColor: '#e8e6f0', padding: 10, cornerRadius: 8,
+          titleFont: { family: "'IBM Plex Mono', monospace", size: 10 },
+          bodyFont:  { family: "'IBM Plex Sans', sans-serif", size: 11 }
+        }
+      },
+      scales: {
+        x: { ...SCALE_STYLE },
+        y: { ...SCALE_STYLE }
+      }
+    }
+  };
+
+  Chart.defaults.color        = '#6b6a80';
+  Chart.defaults.borderColor  = '#2a2a3a';
+  Chart.defaults.font.family  = "'IBM Plex Mono', monospace";
+  Chart.defaults.font.size    = 11;
+
   const wrapper = document.getElementById('chart-wrapper');
   wrapper.innerHTML = '<canvas id="my-chart"></canvas>';
-  const ctx = document.getElementById('my-chart').getContext('2d');
-  Chart.defaults.color = '#6b6a80'; Chart.defaults.borderColor = '#2a2a3a';
-  Chart.defaults.font.family = "'IBM Plex Mono', monospace"; Chart.defaults.font.size = 11;
-  config.options = config.options || {};
-  config.options.responsive = true; config.options.maintainAspectRatio = false;
-  config.options.animation = { duration: 700, easing: 'easeInOutQuart' };
-  config.options.plugins = config.options.plugins || {};
-  config.options.plugins.legend = { ...(config.options.plugins.legend||{}), labels: { color: '#9998b0', font: { family: "'IBM Plex Mono', monospace", size: 10 }, padding: 12, usePointStyle: true } };
-  config.options.plugins.tooltip = { backgroundColor: '#1a1a26', borderColor: '#3a3a50', borderWidth: 1, titleColor: '#e8c84a', bodyColor: '#e8e6f0', padding: 10, titleFont: { family: "'IBM Plex Mono', monospace", size: 10 }, bodyFont: { family: "'IBM Plex Sans', sans-serif", size: 11 }, cornerRadius: 8 };
-  const scaleStyle = { grid: { color: 'rgba(42,42,58,0.7)', drawBorder: false }, ticks: { color: '#5a5870', font: { family: "'IBM Plex Mono', monospace", size: 9 }, maxTicksLimit: 8 }, border: { color: '#2a2a3a', dash: [4,4] } };
-  config.options.scales = config.options.scales || {};
-  config.options.scales.x = { ...(config.options.scales.x||{}), ...scaleStyle };
-  config.options.scales.y = { ...(config.options.scales.y||{}), ...scaleStyle };
-  chartInstance = new Chart(ctx, config);
-  lastChartData = rawData || config.data; lastChartTitle = title || 'graph';
+  chartInstance = new Chart(document.getElementById('my-chart').getContext('2d'), config);
+
+  lastChartData  = { labels, datasets };
+  lastChartTitle = title || 'graph';
+
   document.getElementById('empty-state').style.display = 'none';
   wrapper.style.display = 'block';
-  document.getElementById('graph-title').textContent = title || 'Generated Graph';
+  document.getElementById('graph-title').textContent    = title    || 'Generated Graph';
   document.getElementById('graph-subtitle').textContent = subtitle || '';
   document.getElementById('export-btn').disabled = false;
-  document.getElementById('csv-btn').disabled = false;
+  document.getElementById('csv-btn').disabled    = false;
 }
 
 /* ── EXPORTS ── */
@@ -592,7 +658,7 @@ function downloadChart() {
 }
 function exportCSV() {
   if (!lastChartData) return;
-  const { labels, datasets } = lastChartData;
+  const { labels, datasets } = lastChartData; // raw shape { labels, datasets:[{label,data}] }
   const header = ['Label', ...datasets.map(d => d.label || 'Value')].join(',');
   const rows = labels.map((lbl, i) => [lbl, ...datasets.map(d => d.data[i] ?? '')].join(','));
   const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
