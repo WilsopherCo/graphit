@@ -7,9 +7,6 @@
 <title>Graphit — Graph Anything</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-
-
-
 <style>
 :root{--bg:#09090f;--surface:#111118;--surface2:#1a1a26;--surface3:#20202e;--border:#2a2a3a;--border2:#3a3a50;--accent:#e8c84a;--accent-dim:rgba(232,200,74,0.12);--text:#e8e6f0;--text2:#b0aec8;--muted:#6b6a80;--success:#4af0a0;--error:#f05a4a;--error-dim:rgba(240,90,74,0.1);--header-h:54px;--tab-h:52px}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -104,8 +101,6 @@ textarea::placeholder{color:var(--muted)}
 #source-strip{padding:8px 22px;border-top:1px solid var(--border);display:none;align-items:flex-start;gap:8px;background:rgba(17,17,24,.9);flex-shrink:0}
 .source-label{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;flex-shrink:0;margin-top:2px}
 #source-text{font-size:.73rem;color:var(--muted);font-style:italic;line-height:1.5}
-
-/* MODALS */
 .modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.open{display:flex}
 .modal{background:var(--surface);border:1px solid var(--border2);border-radius:20px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.03);animation:mIn .28s cubic-bezier(.16,1,.3,1)}
@@ -113,8 +108,6 @@ textarea::placeholder{color:var(--muted)}
 .modal-close{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:6px;transition:color .2s;display:flex;align-items:center}
 .modal-close:hover{color:var(--text)}
 .modal-close svg{width:18px;height:18px}
-
-/* AUTH MODAL */
 #auth-modal .modal{max-width:420px}
 .auth-inner{padding:36px 32px;text-align:center}
 @media(max-width:480px){.auth-inner{padding:28px 22px}}
@@ -136,8 +129,6 @@ textarea::placeholder{color:var(--muted)}
 .auth-foot{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted);line-height:1.6}
 .auth-link{color:var(--accent);cursor:pointer;border-bottom:1px solid rgba(232,200,74,.3)}
 .auth-link:hover{border-color:var(--accent)}
-
-/* USER MENU */
 #user-menu .modal{max-width:300px}
 .umenu{padding:22px}
 .umenu-profile{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
@@ -150,8 +141,6 @@ textarea::placeholder{color:var(--muted)}
 .umenu-stat-val{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--accent)}
 .umenu-signout{width:100%;margin-top:14px;padding:11px;background:var(--surface2);border:1px solid var(--border);color:var(--error);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.72rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:all .18s}
 .umenu-signout:hover{background:var(--error-dim);border-color:rgba(240,90,74,.3)}
-
-/* CHART TYPE MODAL */
 #ct-modal .modal{max-width:720px;max-height:86vh;display:flex;flex-direction:column}
 .modal-hdr{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .modal-hdr-title{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--text)}
@@ -171,13 +160,13 @@ textarea::placeholder{color:var(--muted)}
 .modal-ftr-note{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted)}
 .modal-confirm{background:var(--accent);color:#09090f;border:none;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-weight:500;font-size:.85rem;padding:10px 24px;cursor:pointer;transition:all .18s}
 .modal-confirm:hover{background:#f0d85a}
-
 @media(max-width:767px){:root{--header-h:52px}.tab-bar{display:flex}.app-body{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));flex-direction:column}.left-panel{width:100%;border-right:none;border-bottom:1px solid var(--border);flex:1;display:none}.left-panel.active{display:flex}.graph-panel{width:100%;flex:1;display:none}.graph-panel.active{display:flex}.graph-panel-header{padding:10px 16px;flex-wrap:wrap;gap:8px}.graph-title-area{flex-basis:100%}.graph-actions{margin-left:0}.graph-canvas-area{padding:16px}#source-strip{padding:8px 16px;flex-wrap:wrap}.ct-grid{grid-template-columns:repeat(2,1fr)}#ct-modal .modal{max-height:92vh}}
 @media(min-width:768px) and (max-width:1023px){.tab-bar{display:flex}.app-body{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));flex-direction:column}.left-panel{width:100%;border-right:none;flex:1;display:none}.left-panel.active{display:flex}.graph-panel{width:100%;flex:1;display:none}.graph-panel.active{display:flex}}
 @media(min-width:1024px){.app-body{flex-direction:row;bottom:0}.left-panel{display:flex!important;width:340px}.graph-panel{display:flex!important}.tab-bar{display:none!important}}
 </style>
 </head>
 <body>
+
 <header>
   <a class="logo" href="/"><span class="logo-name">Graphit</span><span class="logo-tag">Beta</span></a>
   <div class="header-right">
@@ -319,14 +308,14 @@ textarea::placeholder{color:var(--muted)}
 </div>
 
 <script>
-/* ── CLERK ── */
-let clerk=null,clerkUser=null,sessionCount=0,lastData=null,lastTitle='',chartInst=null,isLoading=false;
+/* ── STATE ── */
+let clerk=null, clerkUser=null, sessionCount=0, lastData=null, lastTitle='', chartInst=null, isLoading=false;
 const hist=[];
-let selCTtype='auto',pendCTtype='auto';
+let selCTtype='auto', pendCTtype='auto';
 
+/* ── CLERK ── */
 async function initClerk() {
   try {
-    // Key is hardcoded here — no timing issue
     clerk = new window.Clerk('pk_live_Y2xlcmsuZ3JhcGhpdC50b2RheSQ');
     await clerk.load();
     console.log('Clerk loaded OK, user:', clerk.user);
@@ -344,34 +333,44 @@ function updateUI(){
   const gr=document.getElementById('graphs-remaining');
   const ht=document.getElementById('hint-txt');
   if(clerkUser){
-    ub.style.display='flex';gr.style.display='flex';ht.textContent='20 graphs/hour';
+    ub.style.display='flex'; gr.style.display='flex'; ht.textContent='20 graphs/hour';
     const av=document.getElementById('hdr-av');
     if(clerkUser.imageUrl) av.innerHTML=`<img src="${clerkUser.imageUrl}">`;
     else av.textContent=(clerkUser.firstName||clerkUser.emailAddresses[0]?.emailAddress||'?')[0].toUpperCase();
     document.getElementById('hdr-name').textContent=clerkUser.firstName||clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0]||'Account';
-  }else{
-    ub.style.display='none';gr.style.display='none';
+  } else {
+    ub.style.display='none'; gr.style.display='none';
     ht.textContent=trialUsed()?'Sign in to continue':'1 free graph, then sign in';
   }
 }
 
-function trialUsed(){return localStorage.getItem('g_trial')==='1';}
-function markTrial(){localStorage.setItem('g_trial','1');}
-async function getToken(){try{return await clerk?.session?.getToken();}catch{return null;}}
+function trialUsed(){ return localStorage.getItem('g_trial')==='1'; }
+function markTrial(){ localStorage.setItem('g_trial','1'); }
+async function getToken(){ try{ return await clerk?.session?.getToken(); }catch{ return null; } }
 
-function authGoogle(){clerk?.openSignIn({afterSignInUrl:location.href,afterSignUpUrl:location.href,strategy:'oauth_google'});}
-function authEmail(){clerk?.openSignUp({afterSignUpUrl:location.href,afterSignInUrl:location.href});}
-function authSignIn(){clerk?.openSignIn({afterSignInUrl:location.href});}
-async function doSignOut(){await clerk?.signOut();closeMod('user-menu');clerkUser=null;updateUI();}
+function authGoogle(){
+  if(!clerk){ alert('Auth not loaded. Check your publishable key.'); return; }
+  clerk.redirectToSignIn({ redirectUrl: window.location.href });
+}
+function authEmail(){
+  if(!clerk){ alert('Auth not loaded. Check your publishable key.'); return; }
+  clerk.redirectToSignUp({ redirectUrl: window.location.href });
+}
+function authSignIn(){
+  if(!clerk){ alert('Auth not loaded. Check your publishable key.'); return; }
+  clerk.redirectToSignIn({ redirectUrl: window.location.href });
+}
+async function doSignOut(){ await clerk?.signOut(); closeMod('user-menu'); clerkUser=null; updateUI(); }
 
 function buildAuthPreview(){
-  const ctx=document.getElementById('auth-canvas');if(!ctx)return;
+  const ctx=document.getElementById('auth-canvas'); if(!ctx) return;
+  Chart.defaults.color='#6b6a80';
   new Chart(ctx,{type:'line',data:{labels:['2000','2005','2010','2015','2020','2024'],datasets:[{data:[5.6,7.9,13.5,18.1,26.9,34.5],borderColor:'#e8c84a',backgroundColor:'rgba(232,200,74,.1)',tension:.3,fill:true,pointRadius:0,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
 }
 
 /* ── USER MENU ── */
 function openUserMenu(){
-  if(!clerkUser)return;
+  if(!clerkUser) return;
   document.getElementById('um-name').textContent=clerkUser.firstName&&clerkUser.lastName?`${clerkUser.firstName} ${clerkUser.lastName}`:clerkUser.firstName||'—';
   document.getElementById('um-email').textContent=clerkUser.emailAddresses?.[0]?.emailAddress||'—';
   document.getElementById('um-count').textContent=sessionCount;
@@ -383,69 +382,80 @@ function openUserMenu(){
 
 /* ── TABS ── */
 function switchTab(t){
-  const lp=document.getElementById('left-panel'),gp=document.getElementById('graph-panel');
-  const tr=document.getElementById('tab-req'),tg=document.getElementById('tab-grph');
-  if(t==='request'){lp.classList.add('active');gp.classList.remove('active');tr.classList.add('active');tg.classList.remove('active');}
-  else{gp.classList.add('active');lp.classList.remove('active');tg.classList.add('active');tr.classList.remove('active');document.getElementById('tab-dot').style.display='none';}
+  const lp=document.getElementById('left-panel'), gp=document.getElementById('graph-panel');
+  const tr=document.getElementById('tab-req'), tg=document.getElementById('tab-grph');
+  if(t==='request'){ lp.classList.add('active'); gp.classList.remove('active'); tr.classList.add('active'); tg.classList.remove('active'); }
+  else{ gp.classList.add('active'); lp.classList.remove('active'); tg.classList.add('active'); tr.classList.remove('active'); document.getElementById('tab-dot').style.display='none'; }
 }
 
-/* ── CHART TYPE ── */
-function openCT(){pendCTtype=selCTtype;document.querySelectorAll('.ct-card').forEach(c=>c.classList.toggle('sel',c.dataset.type===pendCTtype));updCTnote();openMod('ct-modal');}
-function selCT(card){pendCTtype=card.dataset.type;document.querySelectorAll('.ct-card').forEach(c=>c.classList.remove('sel'));card.classList.add('sel');updCTnote();}
-function updCTnote(){const c=document.querySelector(`.ct-card[data-type="${pendCTtype}"]`);document.getElementById('ct-note').textContent=pendCTtype==='auto'?'Currently: Auto (AI decides)':`Selected: ${c?.querySelector('.ct-name')?.textContent||''}`;}
-function confirmCT(){selCTtype=pendCTtype;const c=document.querySelector(`.ct-card[data-type="${selCTtype}"]`);document.getElementById('pill-lbl').textContent=c?.dataset.lbl||'Chart type: Auto';document.getElementById('ct-pill').classList.toggle('has-selection',selCTtype!=='auto');closeMod('ct-modal');}
+/* ── CHART TYPE MODAL ── */
+function openCT(){ pendCTtype=selCTtype; document.querySelectorAll('.ct-card').forEach(c=>c.classList.toggle('sel',c.dataset.type===pendCTtype)); updCTnote(); openMod('ct-modal'); }
+function selCT(card){ pendCTtype=card.dataset.type; document.querySelectorAll('.ct-card').forEach(c=>c.classList.remove('sel')); card.classList.add('sel'); updCTnote(); }
+function updCTnote(){ const c=document.querySelector(`.ct-card[data-type="${pendCTtype}"]`); document.getElementById('ct-note').textContent=pendCTtype==='auto'?'Currently: Auto (AI decides)':`Selected: ${c?.querySelector('.ct-name')?.textContent||''}`; }
+function confirmCT(){ selCTtype=pendCTtype; const c=document.querySelector(`.ct-card[data-type="${selCTtype}"]`); document.getElementById('pill-lbl').textContent=c?.dataset.lbl||'Chart type: Auto'; document.getElementById('ct-pill').classList.toggle('has-selection',selCTtype!=='auto'); closeMod('ct-modal'); }
 
 /* ── MODALS ── */
-function openMod(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
-function closeMod(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
-function ovc(e,id){if(e.target===document.getElementById(id))closeMod(id);}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMod('ct-modal');closeMod('user-menu');closeMod('auth-modal');}});
+function openMod(id){ document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
+function closeMod(id){ document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+function ovc(e,id){ if(e.target===document.getElementById(id)) closeMod(id); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeMod('ct-modal'); closeMod('user-menu'); closeMod('auth-modal'); } });
 
 /* ── TEXTAREA ── */
 const ta=document.getElementById('user-input');
-ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,110)+'px';});
-function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
-function fillEx(el){ta.value=el.textContent.trim();ta.dispatchEvent(new Event('input'));ta.focus();}
-function clearChat(){document.getElementById('chat-messages').innerHTML=`<div class="welcome" id="welcome-screen"><div class="welcome-icon">📈</div><h2>Graph anything.</h2><p>Describe any data you want visualized. Graphit finds the real numbers and builds your graph.</p><div class="example-chips"><div class="chip" onclick="fillEx(this)">U.S. national debt vs. value of the dollar over time</div><div class="chip" onclick="fillEx(this)">Global average temperature anomaly since 1880</div><div class="chip" onclick="fillEx(this)">S&amp;P 500 annual returns vs. U.S. inflation rate</div><div class="chip" onclick="fillEx(this)">World population growth by continent since 1950</div><div class="chip" onclick="fillEx(this)">Bitcoin price vs. gold price, last 5 years</div></div></div>`;}
+ta.addEventListener('input',()=>{ ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,110)+'px'; });
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(); } }
+function fillEx(el){ ta.value=el.textContent.trim(); ta.dispatchEvent(new Event('input')); ta.focus(); }
+function clearChat(){
+  document.getElementById('chat-messages').innerHTML=`<div class="welcome" id="welcome-screen">
+    <div class="welcome-icon">📈</div><h2>Graph anything.</h2>
+    <p>Describe any data you want visualized. Graphit finds the real numbers and builds your graph.</p>
+    <div class="example-chips">
+      <div class="chip" onclick="fillEx(this)">U.S. national debt vs. value of the dollar over time</div>
+      <div class="chip" onclick="fillEx(this)">Global average temperature anomaly since 1880</div>
+      <div class="chip" onclick="fillEx(this)">S&amp;P 500 annual returns vs. U.S. inflation rate</div>
+      <div class="chip" onclick="fillEx(this)">World population growth by continent since 1950</div>
+      <div class="chip" onclick="fillEx(this)">Bitcoin price vs. gold price, last 5 years</div>
+    </div></div>`;
+}
 
 /* ── SEND ── */
 function buildPrompt(inp){
   const m={auto:'',line:'Use a single-series LINE chart.','multi-line':'Use a MULTI-LINE chart.',bar:'Use a vertical BAR chart.','horizontal-bar':'Use a HORIZONTAL BAR chart (indexAxis:y).','grouped-bar':'Use a GROUPED BAR chart.','stacked-bar':'Use a STACKED BAR chart.','scatter':'Use a SCATTER PLOT with {x,y} objects.',area:'Use an AREA chart with fill:true.'};
-  const i=m[selCTtype];return i?`${inp.trim()}\n\n[Chart instruction: ${i}]`:inp.trim();
+  const i=m[selCTtype]; return i?`${inp.trim()}\n\n[Chart instruction: ${i}]`:inp.trim();
 }
 
 async function sendMessage(){
-  const inp=ta.value.trim();if(!inp||isLoading)return;
-  if(!clerkUser&&trialUsed()){openMod('auth-modal');return;}
+  const inp=ta.value.trim(); if(!inp||isLoading) return;
+  if(!clerkUser&&trialUsed()){ openMod('auth-modal'); return; }
   document.getElementById('welcome-screen')?.remove();
-  addMsg('user',inp);ta.value='';ta.style.height='auto';
+  addMsg('user',inp); ta.value=''; ta.style.height='auto';
   const think=addThink();
   setLoad(true,'Searching for data...','Live web search · max 3 lookups');
-  if(window.innerWidth<1024)switchTab('graph');
+  if(window.innerWidth<1024) switchTab('graph');
   try{
     const token=await getToken();
     const hdrs={'Content-Type':'application/json'};
-    if(token)hdrs['Authorization']=`Bearer ${token}`;
+    if(token) hdrs['Authorization']=`Bearer ${token}`;
     const res=await fetch('/api/graph',{method:'POST',headers:hdrs,body:JSON.stringify({prompt:buildPrompt(inp)})});
     const result=await res.json();
     think.remove();
-    if(res.status===401){addMsg('assistant','Session expired — please sign in again.',true);if(window.innerWidth<1024)switchTab('request');openMod('auth-modal');setLoad(false);return;}
-    if(!res.ok||result.error){addMsg('assistant',result.error||'Something went wrong.',true);if(window.innerWidth<1024)switchTab('request');setLoad(false);return;}
-    if(!clerkUser)markTrial();
+    if(res.status===401){ addMsg('assistant','Session expired — please sign in again.',true); if(window.innerWidth<1024) switchTab('request'); openMod('auth-modal'); setLoad(false); return; }
+    if(!res.ok||result.error){ addMsg('assistant',result.error||'Something went wrong.',true); if(window.innerWidth<1024) switchTab('request'); setLoad(false); return; }
+    if(!clerkUser) markTrial();
     setLoad(true,'Rendering graph...','Building your visualization');
     addMsg('assistant',result.message);
     setTimeout(()=>{
       renderChart(result);
-      if(result.sources)showSrc(result.sources);
+      if(result.sources) showSrc(result.sources);
       addHist(inp,result.title);
       sessionCount++;
-      if(result.remainingGraphs!==undefined){document.getElementById('graphs-remaining').textContent=`${result.remainingGraphs} graphs left`;document.getElementById('um-rem').textContent=result.remainingGraphs;}
+      if(result.remainingGraphs!==undefined){ document.getElementById('graphs-remaining').textContent=`${result.remainingGraphs} graphs left`; document.getElementById('um-rem').textContent=result.remainingGraphs; }
       document.getElementById('um-count').textContent=sessionCount;
       setLoad(false);
-      if(window.innerWidth<1024&&!document.getElementById('graph-panel').classList.contains('active'))document.getElementById('tab-dot').style.display='block';
+      if(window.innerWidth<1024&&!document.getElementById('graph-panel').classList.contains('active')) document.getElementById('tab-dot').style.display='block';
       updateUI();
     },300);
-  }catch(e){think.remove();addMsg('assistant','Connection error. Try again.',true);if(window.innerWidth<1024)switchTab('request');setLoad(false);}
+  }catch(e){ think.remove(); addMsg('assistant','Connection error. Try again.',true); if(window.innerWidth<1024) switchTab('request'); setLoad(false); }
 }
 
 /* ── RENDER ── */
@@ -453,40 +463,39 @@ const PAL=[{b:'#e8c84a',bg:'rgba(232,200,74,.12)'},{b:'#5b8cff',bg:'rgba(91,140,
 const SS={grid:{color:'rgba(42,42,58,.7)',drawBorder:false},ticks:{color:'#5a5870',font:{family:"'IBM Plex Mono',monospace",size:9},maxTicksLimit:8},border:{color:'#2a2a3a',dash:[4,4]}};
 
 function renderChart(r){
-  if(chartInst){chartInst.destroy();chartInst=null;}
+  if(chartInst){ chartInst.destroy(); chartInst=null; }
   const{chartType='line',labels=[],datasets=[],title,subtitle}=r;
   let ct=chartType;
-  if(['horizontal-bar','grouped-bar','stacked-bar'].includes(selCTtype))ct='bar';
-  if(selCTtype==='scatter')ct='scatter';
-  const stk=selCTtype==='stacked-bar',iy=selCTtype==='horizontal-bar',isA=selCTtype==='area';
-  const ds=datasets.map((d,i)=>{const c=PAL[i%PAL.length];const b={label:d.label||`Series ${i+1}`,data:d.data||[],borderColor:c.b,backgroundColor:c.bg,borderWidth:2,pointRadius:ct==='scatter'?5:3,pointHoverRadius:ct==='scatter'?8:6,pointBackgroundColor:c.b};if(ct==='line'){b.tension=.3;b.fill=isA||datasets.length===1;if(stk)b.fill=true;}if(ct==='bar'){b.borderRadius=iy?3:4;b.borderSkipped=false;if(stk)b.borderRadius=0;}return b;});
-  Chart.defaults.color='#6b6a80';Chart.defaults.borderColor='#2a2a3a';Chart.defaults.font.family="'IBM Plex Mono',monospace";Chart.defaults.font.size=11;
-  const wr=document.getElementById('chart-wrapper');wr.innerHTML='<canvas id="my-chart"></canvas>';
+  if(['horizontal-bar','grouped-bar','stacked-bar'].includes(selCTtype)) ct='bar';
+  if(selCTtype==='scatter') ct='scatter';
+  const stk=selCTtype==='stacked-bar', iy=selCTtype==='horizontal-bar', isA=selCTtype==='area';
+  const ds=datasets.map((d,i)=>{ const c=PAL[i%PAL.length]; const b={label:d.label||`Series ${i+1}`,data:d.data||[],borderColor:c.b,backgroundColor:c.bg,borderWidth:2,pointRadius:ct==='scatter'?5:3,pointHoverRadius:ct==='scatter'?8:6,pointBackgroundColor:c.b}; if(ct==='line'){b.tension=.3;b.fill=isA||datasets.length===1;if(stk)b.fill=true;} if(ct==='bar'){b.borderRadius=iy?3:4;b.borderSkipped=false;if(stk)b.borderRadius=0;} return b; });
+  Chart.defaults.color='#6b6a80'; Chart.defaults.borderColor='#2a2a3a'; Chart.defaults.font.family="'IBM Plex Mono',monospace"; Chart.defaults.font.size=11;
+  const wr=document.getElementById('chart-wrapper'); wr.innerHTML='<canvas id="my-chart"></canvas>';
   chartInst=new Chart(document.getElementById('my-chart').getContext('2d'),{type:ct,data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:{duration:700,easing:'easeInOutQuart'},interaction:{mode:'index',intersect:false},...(iy?{indexAxis:'y'}:{}),plugins:{legend:{display:datasets.length>1,labels:{color:'#9998b0',font:{family:"'IBM Plex Mono',monospace",size:10},padding:12,usePointStyle:true}},tooltip:{backgroundColor:'#1a1a26',borderColor:'#3a3a50',borderWidth:1,titleColor:'#e8c84a',bodyColor:'#e8e6f0',padding:10,cornerRadius:8,titleFont:{family:"'IBM Plex Mono',monospace",size:10},bodyFont:{family:"'IBM Plex Sans',sans-serif",size:11}}},scales:{x:{...SS,stacked:stk},y:{...SS,stacked:stk}}}});
-  lastData={labels,datasets};lastTitle=title||'graph';
-  document.getElementById('empty-state').style.display='none';wr.style.display='block';
+  lastData={labels,datasets}; lastTitle=title||'graph';
+  document.getElementById('empty-state').style.display='none'; wr.style.display='block';
   document.getElementById('graph-title').textContent=title||'Generated Graph';
   document.getElementById('graph-subtitle').textContent=subtitle||'';
-  document.getElementById('export-btn').disabled=false;document.getElementById('csv-btn').disabled=false;
+  document.getElementById('export-btn').disabled=false; document.getElementById('csv-btn').disabled=false;
 }
 
-function dlChart(){if(!chartInst)return;const a=document.createElement('a');a.download=`graphit-${lastTitle.replace(/\s+/g,'-').toLowerCase()}.png`;a.href=document.getElementById('my-chart').toDataURL('image/png',1.0);a.click();}
-function dlCSV(){if(!lastData)return;const{labels,datasets}=lastData;const h=['Label',...datasets.map(d=>d.label||'Value')].join(',');const r=labels.map((l,i)=>[l,...datasets.map(d=>d.data[i]??'')].join(','));const b=new Blob([[h,...r].join('\n')],{type:'text/csv'});const a=document.createElement('a');a.download=`graphit-${lastTitle.replace(/\s+/g,'-').toLowerCase()}.csv`;a.href=URL.createObjectURL(b);a.click();}
-function addHist(p,t){hist.unshift({p,t});if(hist.length>5)hist.pop();const l=document.getElementById('history-list');l.innerHTML='';hist.forEach(item=>{const el=document.createElement('div');el.className='history-item';el.innerHTML=`<span class="hist-icon">📊</span><span>${esc(item.t||item.p)}</span>`;el.onclick=()=>{ta.value=item.p;ta.dispatchEvent(new Event('input'));if(window.innerWidth<1024)switchTab('request');ta.focus();};l.appendChild(el);});document.getElementById('history-strip').style.display='flex';}
-function showSrc(s){document.getElementById('source-text').textContent=s;document.getElementById('source-strip').style.display='flex';}
-function addMsg(role,text,isErr=false){const m=document.getElementById('chat-messages');const d=document.createElement('div');d.className=`message ${role}`;d.innerHTML=`<span class="msg-label">${role==='user'?'You':'Graphit'}</span><div class="bubble ${isErr?'error-bubble':''}">${esc(text)}</div>`;m.appendChild(d);m.scrollTop=m.scrollHeight;return d;}
-function addThink(){const m=document.getElementById('chat-messages');const d=document.createElement('div');d.className='message assistant';d.innerHTML=`<span class="msg-label">Graphit</span><div class="thinking-dots"><span></span><span></span><span></span></div>`;m.appendChild(d);m.scrollTop=m.scrollHeight;return d;}
-function setLoad(s,lbl,sub){isLoading=s;document.getElementById('send-btn').disabled=s;const o=document.getElementById('loading-overlay');o.style.display=s?'flex':'none';if(lbl)document.getElementById('loading-label').textContent=lbl;if(sub)document.getElementById('loading-sub').textContent=sub;}
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-
+function dlChart(){ if(!chartInst) return; const a=document.createElement('a'); a.download=`graphit-${lastTitle.replace(/\s+/g,'-').toLowerCase()}.png`; a.href=document.getElementById('my-chart').toDataURL('image/png',1.0); a.click(); }
+function dlCSV(){ if(!lastData) return; const{labels,datasets}=lastData; const h=['Label',...datasets.map(d=>d.label||'Value')].join(','); const r=labels.map((l,i)=>[l,...datasets.map(d=>d.data[i]??'')].join(',')); const b=new Blob([[h,...r].join('\n')],{type:'text/csv'}); const a=document.createElement('a'); a.download=`graphit-${lastTitle.replace(/\s+/g,'-').toLowerCase()}.csv`; a.href=URL.createObjectURL(b); a.click(); }
+function addHist(p,t){ hist.unshift({p,t}); if(hist.length>5) hist.pop(); const l=document.getElementById('history-list'); l.innerHTML=''; hist.forEach(item=>{ const el=document.createElement('div'); el.className='history-item'; el.innerHTML=`<span class="hist-icon">📊</span><span>${esc(item.t||item.p)}</span>`; el.onclick=()=>{ ta.value=item.p; ta.dispatchEvent(new Event('input')); if(window.innerWidth<1024) switchTab('request'); ta.focus(); }; l.appendChild(el); }); document.getElementById('history-strip').style.display='flex'; }
+function showSrc(s){ document.getElementById('source-text').textContent=s; document.getElementById('source-strip').style.display='flex'; }
+function addMsg(role,text,isErr=false){ const m=document.getElementById('chat-messages'); const d=document.createElement('div'); d.className=`message ${role}`; d.innerHTML=`<span class="msg-label">${role==='user'?'You':'Graphit'}</span><div class="bubble ${isErr?'error-bubble':''}">${esc(text)}</div>`; m.appendChild(d); m.scrollTop=m.scrollHeight; return d; }
+function addThink(){ const m=document.getElementById('chat-messages'); const d=document.createElement('div'); d.className='message assistant'; d.innerHTML=`<span class="msg-label">Graphit</span><div class="thinking-dots"><span></span><span></span><span></span></div>`; m.appendChild(d); m.scrollTop=m.scrollHeight; return d; }
+function setLoad(s,lbl,sub){ isLoading=s; document.getElementById('send-btn').disabled=s; const o=document.getElementById('loading-overlay'); o.style.display=s?'flex':'none'; if(lbl) document.getElementById('loading-label').textContent=lbl; if(sub) document.getElementById('loading-sub').textContent=sub; }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 
-  <script
-    async
-    src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
-    onload="initClerk()"
-  ></script>
-  
+<!-- Clerk loads AFTER all JS is defined — this is intentional -->
+<script
+  async
+  src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
+  onload="initClerk()"
+></script>
+
 </body>
 </html>
