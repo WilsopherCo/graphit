@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="theme-color" content="#09090f"/>
+<title>Graphit — Graph Anything</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!-- REPLACE WITH YOUR CLERK PUBLISHABLE KEY (dashboard.clerk.com) -->
+<script>window.CLERK_PK='pk_live_YOUR_KEY_HERE';</script>
+<script src="https://unpkg.com/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
+
+<style>
+:root{--bg:#09090f;--surface:#111118;--surface2:#1a1a26;--surface3:#20202e;--border:#2a2a3a;--border2:#3a3a50;--accent:#e8c84a;--accent-dim:rgba(232,200,74,0.12);--text:#e8e6f0;--text2:#b0aec8;--muted:#6b6a80;--success:#4af0a0;--error:#f05a4a;--error-dim:rgba(240,90,74,0.1);--header-h:54px;--tab-h:52px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;width:100%;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-weight:300;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(91,140,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(91,140,255,0.035) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+header{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:rgba(9,9,15,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:baseline;gap:7px;text-decoration:none}
+.logo-name{font-family:'Playfair Display',serif;font-weight:900;font-size:1.4rem;color:var(--accent);letter-spacing:-0.5px}
+.logo-tag{font-family:'IBM Plex Mono',monospace;font-size:0.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;border:1px solid var(--border);padding:2px 5px;border-radius:3px}
+.header-right{display:flex;align-items:center;gap:8px}
+.status-badge{display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--muted)}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--success);box-shadow:0 0 5px var(--success);animation:pulse 2.5s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.graphs-remaining{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--muted);padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;display:none}
+.user-btn{display:none;align-items:center;gap:8px;padding:5px 12px 5px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .18s;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;color:var(--muted)}
+.user-btn:hover{border-color:var(--border2);color:var(--text2)}
+.user-avatar{width:22px;height:22px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--muted);flex-shrink:0}
+.user-avatar img{width:100%;height:100%;object-fit:cover}
+@media(max-width:480px){.graphs-remaining{display:none!important}}
+.tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;height:var(--tab-h);background:rgba(9,9,15,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom);flex-direction:column}
+.tab-bar-inner{display:flex;height:52px}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);transition:color .2s;position:relative}
+.tab-btn.active{color:var(--accent)}
+.tab-btn.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--accent);border-radius:0 0 2px 2px}
+.tab-btn svg{width:18px;height:18px}
+.tab-dot{position:absolute;top:8px;right:calc(50% - 18px);width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);display:none}
+.app-body{position:fixed;top:var(--header-h);left:0;right:0;bottom:0;z-index:1;display:flex}
+.left-panel{width:340px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--surface);overflow:hidden}
+.panel-header{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.panel-label{font-family:'IBM Plex Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:2px;color:var(--muted)}
+.clear-btn{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--muted);background:none;border:none;cursor:pointer;padding:4px 9px;border-radius:4px;transition:all .2s;text-transform:uppercase;letter-spacing:1px}
+.clear-btn:hover{color:var(--error);background:var(--error-dim)}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;-webkit-overflow-scrolling:touch}
+.welcome{display:flex;flex-direction:column;align-items:center;text-align:center;margin:auto;padding:8px}
+.welcome-icon{font-size:2rem;margin-bottom:12px}
+.welcome h2{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--text);margin-bottom:6px}
+.welcome p{font-size:.82rem;color:var(--muted);line-height:1.6;max-width:260px;margin-bottom:16px}
+.example-chips{display:flex;flex-direction:column;gap:7px;width:100%;text-align:left}
+.chip{padding:10px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:.77rem;color:var(--muted);cursor:pointer;transition:all .18s;line-height:1.4;min-height:44px;display:flex;align-items:center}
+.chip:hover,.chip:active{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.message{display:flex;flex-direction:column;gap:3px;animation:fadeUp .28s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.message.user .bubble{background:rgba(91,140,255,.1);border:1px solid rgba(91,140,255,.22);align-self:flex-end}
+.message.assistant .bubble{background:var(--surface2);border:1px solid var(--border);align-self:flex-start}
+.bubble{padding:10px 13px;border-radius:10px;font-size:.83rem;line-height:1.55;max-width:92%}
+.msg-label{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:0 3px}
+.message.user .msg-label{align-self:flex-end}
+.error-bubble{background:var(--error-dim)!important;border-color:rgba(240,90,74,.3)!important;color:var(--error)!important}
+.thinking-dots{display:flex;gap:4px;align-items:center;padding:10px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;width:fit-content}
+.thinking-dots span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:tdB 1.2s infinite}
+.thinking-dots span:nth-child(2){animation-delay:.18s}.thinking-dots span:nth-child(3){animation-delay:.36s}
+@keyframes tdB{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-6px);opacity:1}}
+.chat-input-area{padding:12px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.chart-type-pill{display:flex;align-items:center;gap:7px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all .18s;font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted);width:fit-content;user-select:none}
+.chart-type-pill:hover,.chart-type-pill.has-selection{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.chart-type-pill svg{width:13px;height:13px;flex-shrink:0}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:16px;font-weight:300;padding:11px 13px;resize:none;min-height:46px;max-height:110px;line-height:1.5;transition:border-color .2s;outline:none}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--muted)}
+.send-btn{width:46px;height:46px;border-radius:10px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.send-btn:hover:not(:disabled),.send-btn:active:not(:disabled){background:#f0d85a;transform:scale(1.05)}
+.send-btn:disabled{opacity:.35;cursor:not-allowed}
+.send-btn svg{width:17px;height:17px;color:#09090f}
+.input-hint{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--muted);text-align:center}
+@media(max-width:767px){.input-hint{display:none}}
+.history-strip{border-top:1px solid var(--border);padding:9px 13px;display:none;flex-direction:column;gap:6px;flex-shrink:0;max-height:140px;overflow-y:auto}
+.history-strip-label{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:2px}
+.history-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .18s;font-size:.76rem;color:var(--text2);line-height:1.3;min-height:40px}
+.history-item:hover{border-color:var(--border2);color:var(--text)}
+.hist-icon{font-size:.85rem;flex-shrink:0}
+.graph-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.graph-panel-header{padding:12px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.graph-title-area{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+#graph-title{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#graph-subtitle{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.graph-actions{display:flex;gap:6px;flex-shrink:0;margin-left:12px}
+.action-btn{padding:6px 11px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:all .18s;white-space:nowrap;min-height:34px}
+.action-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.action-btn:disabled{opacity:.3;cursor:not-allowed}
+.graph-canvas-area{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;position:relative;overflow:hidden}
+.empty-state{text-align:center;color:var(--muted);user-select:none;padding:20px}
+.empty-icon{font-size:2.5rem;opacity:.12;margin-bottom:12px;display:block;font-family:monospace;letter-spacing:-3px}
+.empty-state h3{font-family:'Playfair Display',serif;font-size:1rem;color:var(--muted);margin-bottom:7px}
+.empty-state p{font-size:.78rem;max-width:280px;line-height:1.6;margin:0 auto}
+.chart-wrapper{width:100%;height:100%;display:none;position:relative}
+.loading-overlay{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;background:rgba(9,9,15,.78);backdrop-filter:blur(6px);gap:14px;z-index:5}
+.loading-spinner{width:34px;height:34px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--accent);letter-spacing:2px;text-transform:uppercase}
+.loading-sub{font-size:.73rem;color:var(--muted)}
+#source-strip{padding:8px 22px;border-top:1px solid var(--border);display:none;align-items:flex-start;gap:8px;background:rgba(17,17,24,.9);flex-shrink:0}
+.source-label{font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;flex-shrink:0;margin-top:2px}
+#source-text{font-size:.73rem;color:var(--muted);font-style:italic;line-height:1.5}
+
+/* MODALS */
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:20px;width:100%;box-shadow:0 40px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.03);animation:mIn .28s cubic-bezier(.16,1,.3,1)}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:6px;transition:color .2s;display:flex;align-items:center}
+.modal-close:hover{color:var(--text)}
+.modal-close svg{width:18px;height:18px}
+
+/* AUTH MODAL */
+#auth-modal .modal{max-width:420px}
+.auth-inner{padding:36px 32px;text-align:center}
+@media(max-width:480px){.auth-inner{padding:28px 22px}}
+.auth-preview{width:100%;height:88px;margin-bottom:22px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden;position:relative}
+.auth-preview canvas{position:absolute;inset:0}
+.auth-lock{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 20%,rgba(9,9,15,.96) 70%);display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px}
+.auth-lock-icon{font-size:1.1rem;opacity:.5}
+.auth-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;margin-bottom:18px;background:rgba(232,200,74,.08);border:1px solid rgba(232,200,74,.2);border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px}
+.auth-title{font-family:'Playfair Display',serif;font-weight:900;font-size:1.55rem;letter-spacing:-.5px;color:var(--text);margin-bottom:10px;line-height:1.2}
+.auth-sub{font-size:.85rem;color:var(--text2);line-height:1.65;margin-bottom:26px}
+.auth-google{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:13px 20px;background:#fff;color:#111;border:1px solid rgba(0,0,0,.12);border-radius:10px;font-family:'IBM Plex Sans',sans-serif;font-weight:500;font-size:.88rem;cursor:pointer;transition:all .18s;margin-bottom:10px}
+.auth-google:hover{background:#f5f5f5;transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.auth-google svg{width:18px;height:18px;flex-shrink:0}
+.auth-email{width:100%;padding:13px 20px;background:var(--accent);color:#09090f;border:none;border-radius:10px;font-family:'IBM Plex Sans',sans-serif;font-weight:500;font-size:.88rem;cursor:pointer;transition:all .18s;margin-bottom:16px}
+.auth-email:hover{background:#f0d85a;transform:translateY(-1px);box-shadow:0 4px 16px rgba(232,200,74,.3)}
+.auth-div{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.auth-div-line{flex:1;height:1px;background:var(--border)}
+.auth-div-txt{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.auth-foot{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted);line-height:1.6}
+.auth-link{color:var(--accent);cursor:pointer;border-bottom:1px solid rgba(232,200,74,.3)}
+.auth-link:hover{border-color:var(--accent)}
+
+/* USER MENU */
+#user-menu .modal{max-width:300px}
+.umenu{padding:22px}
+.umenu-profile{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.umenu-av{width:38px;height:38px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.95rem;color:var(--muted);flex-shrink:0}
+.umenu-av img{width:100%;height:100%;object-fit:cover}
+.umenu-name{font-size:.88rem;font-weight:500;color:var(--text);margin-bottom:2px}
+.umenu-email{font-family:'IBM Plex Mono',monospace;font-size:.63rem;color:var(--muted)}
+.umenu-stat{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.umenu-stat-label{font-size:.82rem;color:var(--text2)}
+.umenu-stat-val{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--accent)}
+.umenu-signout{width:100%;margin-top:14px;padding:11px;background:var(--surface2);border:1px solid var(--border);color:var(--error);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:.72rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:all .18s}
+.umenu-signout:hover{background:var(--error-dim);border-color:rgba(240,90,74,.3)}
+
+/* CHART TYPE MODAL */
+#ct-modal .modal{max-width:720px;max-height:86vh;display:flex;flex-direction:column}
+.modal-hdr{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-hdr-title{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--text)}
+.modal-hdr-sub{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:1px}
+.modal-bod{padding:20px 24px 24px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;flex:1}
+.auto-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;background:rgba(74,240,160,.08);border:1px solid rgba(74,240,160,.2);border-radius:10px;font-family:'IBM Plex Mono',monospace;font-size:.58rem;color:var(--success);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.ct-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.ct-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden}
+.ct-card:hover{border-color:var(--accent);background:rgba(232,200,74,.04);transform:translateY(-1px)}
+.ct-card.sel{border-color:var(--accent);background:var(--accent-dim)}
+.ct-card.sel::after{content:'✓';position:absolute;top:10px;right:12px;font-size:.75rem;color:var(--accent);font-family:'IBM Plex Mono',monospace}
+.ct-prev{height:72px;margin-bottom:12px;position:relative}
+.ct-svg{width:100%;height:100%}
+.ct-name{font-size:.87rem;font-weight:500;color:var(--text);margin-bottom:4px}
+.ct-desc{font-size:.73rem;color:var(--muted);line-height:1.4}
+.modal-ftr{padding:16px 24px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-ftr-note{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted)}
+.modal-confirm{background:var(--accent);color:#09090f;border:none;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-weight:500;font-size:.85rem;padding:10px 24px;cursor:pointer;transition:all .18s}
+.modal-confirm:hover{background:#f0d85a}
+
+@media(max-width:767px){:root{--header-h:52px}.tab-bar{display:flex}.app-body{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));flex-direction:column}.left-panel{width:100%;border-right:none;border-bottom:1px solid var(--border);flex:1;display:none}.left-panel.active{display:flex}.graph-panel{width:100%;flex:1;display:none}.graph-panel.active{display:flex}.graph-panel-header{padding:10px 16px;flex-wrap:wrap;gap:8px}.graph-title-area{flex-basis:100%}.graph-actions{margin-left:0}.graph-canvas-area{padding:16px}#source-strip{padding:8px 16px;flex-wrap:wrap}.ct-grid{grid-template-columns:repeat(2,1fr)}#ct-modal .modal{max-height:92vh}}
+@media(min-width:768px) and (max-width:1023px){.tab-bar{display:flex}.app-body{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));flex-direction:column}.left-panel{width:100%;border-right:none;flex:1;display:none}.left-panel.active{display:flex}.graph-panel{width:100%;flex:1;display:none}.graph-panel.active{display:flex}}
+@media(min-width:1024px){.app-body{flex-direction:row;bottom:0}.left-panel{display:flex!important;width:340px}.graph-panel{display:flex!important}.tab-bar{display:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><span class="logo-name">Graphit</span><span class="logo-tag">Beta</span></a>
+  <div class="header-right">
+    <div class="status-badge"><div class="status-dot"></div><span>AI + Live Data</span></div>
+    <div class="graphs-remaining" id="graphs-remaining">20 graphs left</div>
+    <div class="user-btn" id="user-btn" onclick="openUserMenu()">
+      <div class="user-avatar" id="hdr-av">?</div>
+      <span id="hdr-name">Account</span>
+    </div>
+  </div>
+</header>
+
+<div class="app-body">
+  <div class="left-panel active" id="left-panel">
+    <div class="panel-header">
+      <span class="panel-label">// Graph Request</span>
+      <button class="clear-btn" onclick="clearChat()">Clear</button>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-icon">📈</div>
+        <h2>Graph anything.</h2>
+        <p>Describe any data you want visualized. Graphit finds the real numbers and builds your graph.</p>
+        <div class="example-chips">
+          <div class="chip" onclick="fillEx(this)">U.S. national debt vs. value of the dollar over time</div>
+          <div class="chip" onclick="fillEx(this)">Global average temperature anomaly since 1880</div>
+          <div class="chip" onclick="fillEx(this)">S&amp;P 500 annual returns vs. U.S. inflation rate</div>
+          <div class="chip" onclick="fillEx(this)">World population growth by continent since 1950</div>
+          <div class="chip" onclick="fillEx(this)">Bitcoin price vs. gold price, last 5 years</div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <button class="chart-type-pill" id="ct-pill" onclick="openCT()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span id="pill-lbl">Chart type: Auto</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px;opacity:.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="input-row">
+        <textarea id="user-input" placeholder="Describe the graph you want to see..." rows="2" onkeydown="handleKey(event)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <div class="input-hint">↵ Send · Shift+↵ New line · <span id="hint-txt">1 free graph, then sign in</span></div>
+    </div>
+    <div class="history-strip" id="history-strip">
+      <div class="history-strip-label">Recent graphs</div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <div class="graph-panel" id="graph-panel">
+    <div class="graph-panel-header">
+      <div class="graph-title-area">
+        <div id="graph-title">Awaiting your first request</div>
+        <div id="graph-subtitle">Type a description on the left to begin</div>
+      </div>
+      <div class="graph-actions">
+        <button class="action-btn" id="export-btn" onclick="dlChart()" disabled>↓ PNG</button>
+        <button class="action-btn" id="csv-btn" onclick="dlCSV()" disabled>↓ CSV</button>
+      </div>
+    </div>
+    <div class="graph-canvas-area">
+      <div class="empty-state" id="empty-state"><span class="empty-icon">▁▃▅▇▅▃▁</span><h3>Your graph will appear here</h3><p>Graphit searches the web for real data and renders a brand new visualization in seconds.</p></div>
+      <div class="chart-wrapper" id="chart-wrapper"><canvas id="my-chart"></canvas></div>
+      <div class="loading-overlay" id="loading-overlay"><div class="loading-spinner"></div><div class="loading-text" id="loading-label">Searching for data...</div><div class="loading-sub" id="loading-sub">This may take a few seconds</div></div>
+    </div>
+    <div id="source-strip"><span class="source-label">Sources</span><span id="source-text"></span></div>
+  </div>
+</div>
+
+<nav class="tab-bar" id="tab-bar">
+  <div class="tab-bar-inner">
+    <button class="tab-btn active" id="tab-req" onclick="switchTab('request')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Request
+    </button>
+    <button class="tab-btn" id="tab-grph" onclick="switchTab('graph')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <div class="tab-dot" id="tab-dot"></div>Graph
+    </button>
+  </div>
+</nav>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <div class="auth-inner">
+      <div class="auth-preview"><canvas id="auth-canvas"></canvas><div class="auth-lock"><span class="auth-lock-icon">🔒</span></div></div>
+      <div class="auth-badge">✦ Free graph used</div>
+      <h2 class="auth-title">Create a free account<br>to keep graphing</h2>
+      <p class="auth-sub">Sign up in seconds — get 20 graphs per hour, unlimited sessions, and full PNG &amp; CSV export. Free forever.</p>
+      <button class="auth-google" onclick="authGoogle()">
+        <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+      <div class="auth-div"><div class="auth-div-line"></div><span class="auth-div-txt">or</span><div class="auth-div-line"></div></div>
+      <button class="auth-email" onclick="authEmail()">Sign up with email →</button>
+      <p class="auth-foot">Already have an account? <span class="auth-link" onclick="authSignIn()">Sign in</span> &nbsp;·&nbsp; No credit card required.</p>
+    </div>
+  </div>
+</div>
+
+<!-- USER MENU -->
+<div class="modal-overlay" id="user-menu" onclick="ovc(event,'user-menu')">
+  <div class="modal">
+    <div class="umenu">
+      <div class="umenu-profile"><div class="umenu-av" id="um-av">?</div><div><div class="umenu-name" id="um-name">—</div><div class="umenu-email" id="um-email">—</div></div></div>
+      <div class="umenu-stat"><span class="umenu-stat-label">Graphs this session</span><span class="umenu-stat-val" id="um-count">0</span></div>
+      <div class="umenu-stat"><span class="umenu-stat-label">Remaining this hour</span><span class="umenu-stat-val" id="um-rem">20</span></div>
+      <button class="umenu-signout" onclick="doSignOut()">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHART TYPE MODAL -->
+<div class="modal-overlay" id="ct-modal" onclick="ovc(event,'ct-modal')">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div><div class="modal-hdr-title">Choose chart type</div><div class="modal-hdr-sub">Select how you want your data visualized</div></div>
+      <button class="modal-close" onclick="closeMod('ct-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-bod">
+      <div class="auto-badge"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>AI picks automatically when set to Auto</div>
+      <div class="ct-grid">
+        <div class="ct-card sel" data-type="auto" data-lbl="Chart type: Auto" onclick="selCT(this)"><div class="ct-prev"><svg class="ct-svg" viewBox="0 0 120 72" fill="none"><rect x="8" y="40" width="14" height="32" rx="2" fill="#e8c84a" opacity=".6"/><rect x="26" y="24" width="14" height="48" rx="2" fill="#e8c84a" opacity=".6"/><rect x="44" y="32" width="14" height="40" rx="2" fill="#e8c84a" opacity=".6"/><polyline points="88,56 96,30 104,42 112,14" stroke="#5b8cff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="88" cy="56" r="3" fill="#5b8cff"/><circle cx="96" cy="30" r="3" fill="#5b8cff"/><circle cx="104" cy="42" r="3" fill="#5b8cff"/><circle cx="112" cy="14" r="3" fill="#5b8cff"/></svg></div><div class="ct-name">Auto</div><div class="ct-desc">AI picks the best chart type</div></div>
+        <div class="ct-card" data-type="line" data-lbl="Chart type: Line" onclick="selCT(this)"><div class="ct-prev"><svg class="ct-svg" viewBox="0 0 120 72" fill="none"><path d="M8 60L30 38L52 44L74 20L96 28L118 8" stroke="#e8c84a" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M8 60L30 38L52 44L74 20L96 28L118 8L118 72L8 72Z" fill="#e8c84a" opacity=".08"/><circle cx="30" cy="38" r="3" fill="#e8c84a"/><circle cx="74" cy="20" r="3" fill="#e8c84a"/><circle cx="118" cy="8" r="3" fill="#e8c84a"/></svg></div><div class="ct-name">Line</div><div class="ct-desc">Trends over time, continuous data</div></div>
+        <div class="ct-card" data-type="multi-line" data-lbl="Chart type: Multi-line" onclick="selCT(this)"><div class="ct-prev"><svg class="ct-svg" viewBox="0 0 120 72" fill="none"><path d="M8 55L38 30L68 40L98 15L118 22" stroke="#e8c84a" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M8 65L38 50L68 58L98 38L118 48" stroke="#5b8cff" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M8 45L38 60L68 30L98 50L118 8" stroke="#4af0a0" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></div><div class="ct-name">Multi-line</div><div class="ct-desc">Compare multiple series</div></div>
+        <div class="ct-card" data-type="bar" data-lbl="Chart type: Bar" onclick="selCT(this)"><div class="ct-prev"><svg class="ct-svg" viewBox="0 0 120 72" fill="none"><rect x="8" y="44" width="18" height="28" rx="2" fill="#e8c84a" opacity=".8"/><rect x="32" y="20" width="18" height="52" rx="2" fill="#e8c84a" opacity=".8"/><rect x="56" y="32" width="18" height="40" rx="2" fill="#e8c84a" opacity=".8"/><rect x="80" y="8" width="18" height="64" rx="2" fill="#e8c84a" opacity=".8"/><rect x="104" y="50" width="16" height="22" rx="2" fill="#e8c84a" opacity=".8"/></svg></div><div class="ct-name">Bar</div><div class="ct-desc">Compare values across categories</div></div>
+        <div class="ct-card" data-type="horizontal-bar" data-lbl="Chart type: Horizontal bar" onclick="selCT(this)"><div class="ct-prev"><svg class="ct-svg" viewBox="0 0 120 72" fill="none"><rect x="8" y="6" width="88" height="12" rx="2" fill="#e8c84a" opacity=".8"/><rect x="8" y="22" width="60" height="12" rx="2" fill="#e8c84a" opacity=".8"/><rect x="8" y="38" width="76" height="12" rx="2" fill="#e8c84a" opacity=".8"/><rect x="8" y="54" width="42" height="12" rx="2" fill="#e8c84a" opacity=".8"/></svg></div><div class="ct-name">Horizontal bar</div><div class="ct-desc">Rankings with long labels</div></div>
+        <div class="ct-card" data-type="grouped-bar" data-lbl="Chart type: Grouped bar" onclick="selCT(this)"><div class="ct-prev"><svg class="ct-svg" viewBox="0 0 120 72" fill="none"><rect x="8" y="28" width="13" height="44" rx="2" fill="#e8c84a" opacity=".85"/><rect x="23" y="44" width="13" height="28" rx="2" fill="#5b8cff" opacity=".85"/><rect x="44" y="16" width="13" height="56" rx="2" fill="#e8c84a" opacity=".85"/><rect x="59" y="36" width="13" height="36" rx="2" fill="#5b8cff" opacity=".85"/><rect x="80" y="34" width="13" height="38" rx="2" fill="#e8c84a" opacity=".85"/><rect x="95" y="52" width="13" height="20" rx="2" fill="#5b8cff" opacity=".85"/></svg></div><div class="ct-name">Grouped bar</div><div class="ct-desc">Side-by-side comparison</div></div>
+        <div class="ct-card" data-type="stacked-bar" data-lbl="Chart type: Stacked bar" onclick="selCT(this)"><div class="ct-prev"><svg class="ct-svg" viewBox="0 0 120 72" fill="none"><rect x="8" y="36" width="20" height="36" rx="2" fill="#e8c84a" opacity=".85"/><rect x="8" y="16" width="20" height="20" rx="2" fill="#5b8cff" opacity=".85"/><rect x="36" y="24" width="20" height="48" rx="2" fill="#e8c84a" opacity=".85"/><rect x="36" y="8" width="20" height="16" rx="2" fill="#5b8cff" opacity=".85"/><rect x="64" y="30" width="20" height="42" rx="2" fill="#e8c84a" opacity=".85"/><rect x="64" y="14" width="20" height="16" rx="2" fill="#5b8cff" opacity=".85"/></svg></div><div class="ct-name">Stacked bar</div><div class="ct-desc">Part-to-whole composition</div></div>
+        <div class="ct-card" data-type="scatter" data-lbl="Chart type: Scatter" onclick="selCT(this)"><div class="ct-prev"><svg class="ct-svg" viewBox="0 0 120 72" fill="none"><circle cx="20" cy="54" r="4" fill="#e8c84a" opacity=".8"/><circle cx="42" cy="58" r="4" fill="#e8c84a" opacity=".8"/><circle cx="55" cy="30" r="4" fill="#e8c84a" opacity=".8"/><circle cx="75" cy="18" r="4" fill="#e8c84a" opacity=".8"/><circle cx="98" cy="12" r="4" fill="#e8c84a" opacity=".8"/><line x1="14" y1="64" x2="114" y2="8" stroke="#5b8cff" stroke-width="1.5" stroke-dasharray="4 3" opacity=".5"/></svg></div><div class="ct-name">Scatter</div><div class="ct-desc">Correlation between two variables</div></div>
+        <div class="ct-card" data-type="area" data-lbl="Chart type: Area" onclick="selCT(this)"><div class="ct-prev"><svg class="ct-svg" viewBox="0 0 120 72" fill="none"><path d="M8 65L28 50L48 54L68 30L88 38L108 14L108 72L8 72Z" fill="#e8c84a" opacity=".18"/><path d="M8 65L28 50L48 54L68 30L88 38L108 14" stroke="#e8c84a" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg></div><div class="ct-name">Area</div><div class="ct-desc">Filled trend, shows volume</div></div>
+      </div>
+    </div>
+    <div class="modal-ftr"><span class="modal-ftr-note" id="ct-note">Currently: Auto (AI decides)</span><button class="modal-confirm" onclick="confirmCT()">Confirm →</button></div>
+  </div>
+</div>
+
+<script>
+/* ── CLERK ── */
+let clerk=null,clerkUser=null,sessionCount=0,lastData=null,lastTitle='',chartInst=null,isLoading=false;
+const hist=[];
+let selCTtype='auto',pendCTtype='auto';
+
+async function initClerk(){
+  try{
+    clerk=new window.Clerk(window.CLERK_PK);
+    await clerk.load();
+    clerk.addListener(({user})=>{clerkUser=user;updateUI();});
+    clerkUser=clerk.user;
+    updateUI();
+    buildAuthPreview();
+  }catch(e){console.error('Clerk init:',e);}
+}
+
+function updateUI(){
+  const ub=document.getElementById('user-btn');
+  const gr=document.getElementById('graphs-remaining');
+  const ht=document.getElementById('hint-txt');
+  if(clerkUser){
+    ub.style.display='flex';gr.style.display='flex';ht.textContent='20 graphs/hour';
+    const av=document.getElementById('hdr-av');
+    if(clerkUser.imageUrl) av.innerHTML=`<img src="${clerkUser.imageUrl}">`;
+    else av.textContent=(clerkUser.firstName||clerkUser.emailAddresses[0]?.emailAddress||'?')[0].toUpperCase();
+    document.getElementById('hdr-name').textContent=clerkUser.firstName||clerkUser.emailAddresses[0]?.emailAddress?.split('@')[0]||'Account';
+  }else{
+    ub.style.display='none';gr.style.display='none';
+    ht.textContent=trialUsed()?'Sign in to continue':'1 free graph, then sign in';
+  }
+}
+
+function trialUsed(){return localStorage.getItem('g_trial')==='1';}
+function markTrial(){localStorage.setItem('g_trial','1');}
+async function getToken(){try{return await clerk?.session?.getToken();}catch{return null;}}
+
+function authGoogle(){clerk?.openSignIn({afterSignInUrl:location.href,afterSignUpUrl:location.href,strategy:'oauth_google'});}
+function authEmail(){clerk?.openSignUp({afterSignUpUrl:location.href,afterSignInUrl:location.href});}
+function authSignIn(){clerk?.openSignIn({afterSignInUrl:location.href});}
+async function doSignOut(){await clerk?.signOut();closeMod('user-menu');clerkUser=null;updateUI();}
+
+function buildAuthPreview(){
+  const ctx=document.getElementById('auth-canvas');if(!ctx)return;
+  new Chart(ctx,{type:'line',data:{labels:['2000','2005','2010','2015','2020','2024'],datasets:[{data:[5.6,7.9,13.5,18.1,26.9,34.5],borderColor:'#e8c84a',backgroundColor:'rgba(232,200,74,.1)',tension:.3,fill:true,pointRadius:0,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}});
+}
+
+/* ── USER MENU ── */
+function openUserMenu(){
+  if(!clerkUser)return;
+  document.getElementById('um-name').textContent=clerkUser.firstName&&clerkUser.lastName?`${clerkUser.firstName} ${clerkUser.lastName}`:clerkUser.firstName||'—';
+  document.getElementById('um-email').textContent=clerkUser.emailAddresses?.[0]?.emailAddress||'—';
+  document.getElementById('um-count').textContent=sessionCount;
+  const av=document.getElementById('um-av');
+  if(clerkUser.imageUrl) av.innerHTML=`<img src="${clerkUser.imageUrl}">`;
+  else av.textContent=document.getElementById('hdr-name').textContent[0]||'?';
+  openMod('user-menu');
+}
+
+/* ── TABS ── */
+function switchTab(t){
+  const lp=document.getElementById('left-panel'),gp=document.getElementById('graph-panel');
+  const tr=document.getElementById('tab-req'),tg=document.getElementById('tab-grph');
+  if(t==='request'){lp.classList.add('active');gp.classList.remove('active');tr.classList.add('active');tg.classList.remove('active');}
+  else{gp.classList.add('active');lp.classList.remove('active');tg.classList.add('active');tr.classList.remove('active');document.getElementById('tab-dot').style.display='none';}
+}
+
+/* ── CHART TYPE ── */
+function openCT(){pendCTtype=selCTtype;document.querySelectorAll('.ct-card').forEach(c=>c.classList.toggle('sel',c.dataset.type===pendCTtype));updCTnote();openMod('ct-modal');}
+function selCT(card){pendCTtype=card.dataset.type;document.querySelectorAll('.ct-card').forEach(c=>c.classList.remove('sel'));card.classList.add('sel');updCTnote();}
+function updCTnote(){const c=document.querySelector(`.ct-card[data-type="${pendCTtype}"]`);document.getElementById('ct-note').textContent=pendCTtype==='auto'?'Currently: Auto (AI decides)':`Selected: ${c?.querySelector('.ct-name')?.textContent||''}`;}
+function confirmCT(){selCTtype=pendCTtype;const c=document.querySelector(`.ct-card[data-type="${selCTtype}"]`);document.getElementById('pill-lbl').textContent=c?.dataset.lbl||'Chart type: Auto';document.getElementById('ct-pill').classList.toggle('has-selection',selCTtype!=='auto');closeMod('ct-modal');}
+
+/* ── MODALS ── */
+function openMod(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeMod(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+function ovc(e,id){if(e.target===document.getElementById(id))closeMod(id);}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMod('ct-modal');closeMod('user-menu');closeMod('auth-modal');}});
+
+/* ── TEXTAREA ── */
+const ta=document.getElementById('user-input');
+ta.addEventListener('input',()=>{ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight,110)+'px';});
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
+function fillEx(el){ta.value=el.textContent.trim();ta.dispatchEvent(new Event('input'));ta.focus();}
+function clearChat(){document.getElementById('chat-messages').innerHTML=`<div class="welcome" id="welcome-screen"><div class="welcome-icon">📈</div><h2>Graph anything.</h2><p>Describe any data you want visualized. Graphit finds the real numbers and builds your graph.</p><div class="example-chips"><div class="chip" onclick="fillEx(this)">U.S. national debt vs. value of the dollar over time</div><div class="chip" onclick="fillEx(this)">Global average temperature anomaly since 1880</div><div class="chip" onclick="fillEx(this)">S&amp;P 500 annual returns vs. U.S. inflation rate</div><div class="chip" onclick="fillEx(this)">World population growth by continent since 1950</div><div class="chip" onclick="fillEx(this)">Bitcoin price vs. gold price, last 5 years</div></div></div>`;}
+
+/* ── SEND ── */
+function buildPrompt(inp){
+  const m={auto:'',line:'Use a single-series LINE chart.','multi-line':'Use a MULTI-LINE chart.',bar:'Use a vertical BAR chart.','horizontal-bar':'Use a HORIZONTAL BAR chart (indexAxis:y).','grouped-bar':'Use a GROUPED BAR chart.','stacked-bar':'Use a STACKED BAR chart.','scatter':'Use a SCATTER PLOT with {x,y} objects.',area:'Use an AREA chart with fill:true.'};
+  const i=m[selCTtype];return i?`${inp.trim()}\n\n[Chart instruction: ${i}]`:inp.trim();
+}
+
+async function sendMessage(){
+  const inp=ta.value.trim();if(!inp||isLoading)return;
+  if(!clerkUser&&trialUsed()){openMod('auth-modal');return;}
+  document.getElementById('welcome-screen')?.remove();
+  addMsg('user',inp);ta.value='';ta.style.height='auto';
+  const think=addThink();
+  setLoad(true,'Searching for data...','Live web search · max 3 lookups');
+  if(window.innerWidth<1024)switchTab('graph');
+  try{
+    const token=await getToken();
+    const hdrs={'Content-Type':'application/json'};
+    if(token)hdrs['Authorization']=`Bearer ${token}`;
+    const res=await fetch('/api/graph',{method:'POST',headers:hdrs,body:JSON.stringify({prompt:buildPrompt(inp)})});
+    const result=await res.json();
+    think.remove();
+    if(res.status===401){addMsg('assistant','Session expired — please sign in again.',true);if(window.innerWidth<1024)switchTab('request');openMod('auth-modal');setLoad(false);return;}
+    if(!res.ok||result.error){addMsg('assistant',result.error||'Something went wrong.',true);if(window.innerWidth<1024)switchTab('request');setLoad(false);return;}
+    if(!clerkUser)markTrial();
+    setLoad(true,'Rendering graph...','Building your visualization');
+    addMsg('assistant',result.message);
+    setTimeout(()=>{
+      renderChart(result);
+      if(result.sources)showSrc(result.sources);
+      addHist(inp,result.title);
+      sessionCount++;
+      if(result.remainingGraphs!==undefined){document.getElementById('graphs-remaining').textContent=`${result.remainingGraphs} graphs left`;document.getElementById('um-rem').textContent=result.remainingGraphs;}
+      document.getElementById('um-count').textContent=sessionCount;
+      setLoad(false);
+      if(window.innerWidth<1024&&!document.getElementById('graph-panel').classList.contains('active'))document.getElementById('tab-dot').style.display='block';
+      updateUI();
+    },300);
+  }catch(e){think.remove();addMsg('assistant','Connection error. Try again.',true);if(window.innerWidth<1024)switchTab('request');setLoad(false);}
+}
+
+/* ── RENDER ── */
+const PAL=[{b:'#e8c84a',bg:'rgba(232,200,74,.12)'},{b:'#5b8cff',bg:'rgba(91,140,255,.12)'},{b:'#4af0a0',bg:'rgba(74,240,160,.12)'},{b:'#f05a4a',bg:'rgba(240,90,74,.12)'},{b:'#c084fc',bg:'rgba(192,132,252,.12)'},{b:'#38bdf8',bg:'rgba(56,189,248,.12)'}];
+const SS={grid:{color:'rgba(42,42,58,.7)',drawBorder:false},ticks:{color:'#5a5870',font:{family:"'IBM Plex Mono',monospace",size:9},maxTicksLimit:8},border:{color:'#2a2a3a',dash:[4,4]}};
+
+function renderChart(r){
+  if(chartInst){chartInst.destroy();chartInst=null;}
+  const{chartType='line',labels=[],datasets=[],title,subtitle}=r;
+  let ct=chartType;
+  if(['horizontal-bar','grouped-bar','stacked-bar'].includes(selCTtype))ct='bar';
+  if(selCTtype==='scatter')ct='scatter';
+  const stk=selCTtype==='stacked-bar',iy=selCTtype==='horizontal-bar',isA=selCTtype==='area';
+  const ds=datasets.map((d,i)=>{const c=PAL[i%PAL.length];const b={label:d.label||`Series ${i+1}`,data:d.data||[],borderColor:c.b,backgroundColor:c.bg,borderWidth:2,pointRadius:ct==='scatter'?5:3,pointHoverRadius:ct==='scatter'?8:6,pointBackgroundColor:c.b};if(ct==='line'){b.tension=.3;b.fill=isA||datasets.length===1;if(stk)b.fill=true;}if(ct==='bar'){b.borderRadius=iy?3:4;b.borderSkipped=false;if(stk)b.borderRadius=0;}return b;});
+  Chart.defaults.color='#6b6a80';Chart.defaults.borderColor='#2a2a3a';Chart.defaults.font.family="'IBM Plex Mono',monospace";Chart.defaults.font.size=11;
+  const wr=document.getElementById('chart-wrapper');wr.innerHTML='<canvas id="my-chart"></canvas>';
+  chartInst=new Chart(document.getElementById('my-chart').getContext('2d'),{type:ct,data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:{duration:700,easing:'easeInOutQuart'},interaction:{mode:'index',intersect:false},...(iy?{indexAxis:'y'}:{}),plugins:{legend:{display:datasets.length>1,labels:{color:'#9998b0',font:{family:"'IBM Plex Mono',monospace",size:10},padding:12,usePointStyle:true}},tooltip:{backgroundColor:'#1a1a26',borderColor:'#3a3a50',borderWidth:1,titleColor:'#e8c84a',bodyColor:'#e8e6f0',padding:10,cornerRadius:8,titleFont:{family:"'IBM Plex Mono',monospace",size:10},bodyFont:{family:"'IBM Plex Sans',sans-serif",size:11}}},scales:{x:{...SS,stacked:stk},y:{...SS,stacked:stk}}}});
+  lastData={labels,datasets};lastTitle=title||'graph';
+  document.getElementById('empty-state').style.display='none';wr.style.display='block';
+  document.getElementById('graph-title').textContent=title||'Generated Graph';
+  document.getElementById('graph-subtitle').textContent=subtitle||'';
+  document.getElementById('export-btn').disabled=false;document.getElementById('csv-btn').disabled=false;
+}
+
+function dlChart(){if(!chartInst)return;const a=document.createElement('a');a.download=`graphit-${lastTitle.replace(/\s+/g,'-').toLowerCase()}.png`;a.href=document.getElementById('my-chart').toDataURL('image/png',1.0);a.click();}
+function dlCSV(){if(!lastData)return;const{labels,datasets}=lastData;const h=['Label',...datasets.map(d=>d.label||'Value')].join(',');const r=labels.map((l,i)=>[l,...datasets.map(d=>d.data[i]??'')].join(','));const b=new Blob([[h,...r].join('\n')],{type:'text/csv'});const a=document.createElement('a');a.download=`graphit-${lastTitle.replace(/\s+/g,'-').toLowerCase()}.csv`;a.href=URL.createObjectURL(b);a.click();}
+function addHist(p,t){hist.unshift({p,t});if(hist.length>5)hist.pop();const l=document.getElementById('history-list');l.innerHTML='';hist.forEach(item=>{const el=document.createElement('div');el.className='history-item';el.innerHTML=`<span class="hist-icon">📊</span><span>${esc(item.t||item.p)}</span>`;el.onclick=()=>{ta.value=item.p;ta.dispatchEvent(new Event('input'));if(window.innerWidth<1024)switchTab('request');ta.focus();};l.appendChild(el);});document.getElementById('history-strip').style.display='flex';}
+function showSrc(s){document.getElementById('source-text').textContent=s;document.getElementById('source-strip').style.display='flex';}
+function addMsg(role,text,isErr=false){const m=document.getElementById('chat-messages');const d=document.createElement('div');d.className=`message ${role}`;d.innerHTML=`<span class="msg-label">${role==='user'?'You':'Graphit'}</span><div class="bubble ${isErr?'error-bubble':''}">${esc(text)}</div>`;m.appendChild(d);m.scrollTop=m.scrollHeight;return d;}
+function addThink(){const m=document.getElementById('chat-messages');const d=document.createElement('div');d.className='message assistant';d.innerHTML=`<span class="msg-label">Graphit</span><div class="thinking-dots"><span></span><span></span><span></span></div>`;m.appendChild(d);m.scrollTop=m.scrollHeight;return d;}
+function setLoad(s,lbl,sub){isLoading=s;document.getElementById('send-btn').disabled=s;const o=document.getElementById('loading-overlay');o.style.display=s?'flex':'none';if(lbl)document.getElementById('loading-label').textContent=lbl;if(sub)document.getElementById('loading-sub').textContent=sub;}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+initClerk();
+</script>
+</body>
+</html>
