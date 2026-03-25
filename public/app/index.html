@@ -8,12 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
-<!-- REPLACE WITH YOUR CLERK PUBLISHABLE KEY (dashboard.clerk.com) -->
-<script
-  async
-  src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
-  onload="initClerk()"
-></script>
+
 
 <style>
 :root{--bg:#09090f;--surface:#111118;--surface2:#1a1a26;--surface3:#20202e;--border:#2a2a3a;--border2:#3a3a50;--accent:#e8c84a;--accent-dim:rgba(232,200,74,0.12);--text:#e8e6f0;--text2:#b0aec8;--muted:#6b6a80;--success:#4af0a0;--error:#f05a4a;--error-dim:rgba(240,90,74,0.1);--header-h:54px;--tab-h:52px}
@@ -486,5 +481,12 @@ function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g
 
 
 </script>
+
+  <script
+    async
+    src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
+    onload="initClerk()"
+  ></script>
+  
 </body>
 </html>
