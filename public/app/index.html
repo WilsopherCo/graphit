@@ -9,8 +9,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <!-- REPLACE WITH YOUR CLERK PUBLISHABLE KEY (dashboard.clerk.com) -->
-<script>window.CLERK_PK='pk_live_Y2xlcmsuZ3JhcGhpdC50b2RheSQ';</script>
-<script src="https://unpkg.com/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
+<script
+  async
+  src="https://unpkg.com/@clerk/clerk-js@latest/dist/clerk.browser.js"
+  onload="initClerk()"
+></script>
 
 <style>
 :root{--bg:#09090f;--surface:#111118;--surface2:#1a1a26;--surface3:#20202e;--border:#2a2a3a;--border2:#3a3a50;--accent:#e8c84a;--accent-dim:rgba(232,200,74,0.12);--text:#e8e6f0;--text2:#b0aec8;--muted:#6b6a80;--success:#4af0a0;--error:#f05a4a;--error-dim:rgba(240,90,74,0.1);--header-h:54px;--tab-h:52px}
@@ -326,15 +329,19 @@ let clerk=null,clerkUser=null,sessionCount=0,lastData=null,lastTitle='',chartIns
 const hist=[];
 let selCTtype='auto',pendCTtype='auto';
 
-async function initClerk(){
-  try{
-    clerk=new window.Clerk(window.CLERK_PK);
+async function initClerk() {
+  try {
+    // Key is hardcoded here — no timing issue
+    clerk = new window.Clerk('pk_live_Y2xlcmsuZ3JhcGhpdC50b2RheSQ');
     await clerk.load();
-    clerk.addListener(({user})=>{clerkUser=user;updateUI();});
-    clerkUser=clerk.user;
+    console.log('Clerk loaded OK, user:', clerk.user);
+    clerk.addListener(({ user }) => { clerkUser = user; updateUI(); });
+    clerkUser = clerk.user;
     updateUI();
     buildAuthPreview();
-  }catch(e){console.error('Clerk init:',e);}
+  } catch(e) {
+    console.error('Clerk init failed:', e);
+  }
 }
 
 function updateUI(){
