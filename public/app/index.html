@@ -316,7 +316,7 @@ let selCTtype='auto', pendCTtype='auto';
 /* ── CLERK ── */
 async function initClerk() {
   try {
-    clerk = new window.Clerk('pk_live_Y2xlcmsuZ3JhcGhpdC50b2RheSQ');
+    clerk = window.Clerk;
     await clerk.load();
     console.log('Clerk loaded OK, user:', clerk.user);
     clerk.addListener(({ user }) => { clerkUser = user; updateUI(); });
@@ -493,6 +493,7 @@ function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/
 <!-- Clerk loads AFTER all JS is defined — this is intentional -->
 <script
   async
+  data-clerk-publishable-key="pk_live_Y2xlcmsuZ3JhcGhpdC50b2RheSQ"
   src="https://unpkg.com/@clerk/clerk-js@4/dist/clerk.browser.js"
   onload="initClerk()"
 ></script>
