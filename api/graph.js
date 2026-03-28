@@ -5,9 +5,9 @@ import { verifyToken } from '@clerk/backend';
 
 // ── Rate limiter — keyed by Clerk userId ──────────────────────────────────────
 const rateMap  = new Map();
-const MAX_REQS = 20;   // signed-in users
+const MAX_REQS = 5;   // signed-in users
 const MAX_ANON = 1;    // anonymous trial
-const WINDOW   = 60 * 60 * 1000;
+const WINDOW   = 24 * 60 * 60 * 1000;
 
 function checkRate(key, isAnon = false) {
   const max   = isAnon ? MAX_ANON : MAX_REQS;
@@ -121,9 +121,8 @@ export default async function handler(req, res) {
   const { limited, remaining } = checkRate(userId);
   if (limited) {
     return res.status(429).json({
-      error: `You've made ${MAX_REQS} graphs this hour. Limit resets soon — check back in a bit!`
-    });
-  }
+  error: `You've reached your limit of 5 free graphs today. Come back tomorrow!`
+});
 
   // 3. Validate prompt
   const { prompt } = req.body || {};
