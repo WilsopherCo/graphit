@@ -435,6 +435,7 @@ async function sendMessage(){
   if(window.innerWidth<1024) switchTab('graph');
   try{
     const token=await getToken();
+    console.log('Token being sent:', token ? token.slice(0,30)+'...' : 'NULL');
     const hdrs={'Content-Type':'application/json'};
     if(token) hdrs['Authorization']=`Bearer ${token}`;
     const res=await fetch('/api/graph',{method:'POST',headers:hdrs,body:JSON.stringify({prompt:buildPrompt(inp)})});
