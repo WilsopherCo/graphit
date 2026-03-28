@@ -1,9 +1,7 @@
 // api/graph.js — Graphit backend
 // Verifies Clerk session tokens. Rate limits per user ID (not IP).
 
-import { createClerkClient } from '@clerk/backend';
-
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+import { verifyToken } from '@clerk/backend';
 
 // ── Rate limiter — keyed by Clerk userId ──────────────────────────────────────
 const rateMap  = new Map();
@@ -104,12 +102,14 @@ export default async function handler(req, res) {
   if (token) {
   // Signed-in user — verify token
     try {
-      const payload = await clerk.verifyToken(token);
-      userId = payload.sub;
-    } catch (err) {
-      console.error('Token verify failed:', err.message);
-      return res.status(401).json({ error: 'Session expired. Please sign in again.' });
-    }
+  const payload = await verifyToken(token, {
+    secretKey: process.env.CLERK_SECRET_KEY,
+  });
+  userId = payload.sub;
+} catch (err) {
+  console.error('Token verify failed:', err.message);
+  return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+}
   } else {
   // No token — anonymous trial request, rate limit by IP
     userId = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
