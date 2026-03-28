@@ -334,7 +334,7 @@ function updateUI(){
   const ht=document.getElementById('hint-txt');
   if(clerkUser){
     localStorage.removeItem('g_trial'); // signed in — trial gate no longer applies
-    ub.style.display='flex'; gr.style.display='flex'; ht.textContent='20 graphs/hour';
+    ub.style.display='flex'; gr.style.display='flex'; ht.textContent='5 graphs/day';
     const av=document.getElementById('hdr-av');
     if(clerkUser.imageUrl) av.innerHTML=`<img src="${clerkUser.imageUrl}">`;
     else av.textContent=(clerkUser.firstName||clerkUser.emailAddresses[0]?.emailAddress||'?')[0].toUpperCase();
