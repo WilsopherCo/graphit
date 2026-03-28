@@ -1,13 +1,10 @@
-// api/graph.js — Graphit backend
-// Verifies Clerk session tokens. Rate limits per user ID (not IP).
-
 const { verifyToken } = require('@clerk/backend');
 
-// ── Rate limiter — keyed by Clerk userId ──────────────────────────────────────
+// ── Rate limiter ──────────────────────────────────────────────────────────────
 const rateMap  = new Map();
-const MAX_REQS = 5;   // signed-in users
-const MAX_ANON = 1;    // anonymous trial
-const WINDOW   = 24 * 60 * 60 * 1000;
+const MAX_REQS = 5;
+const MAX_ANON = 1;
+const WINDOW   = 24 * 60 * 60 * 1000; // 24 hours
 
 function checkRate(key, isAnon = false) {
   const max   = isAnon ? MAX_ANON : MAX_REQS;
@@ -43,47 +40,60 @@ chartType must be one of: "line", "bar", "scatter".
 Use multiple objects in datasets for multi-series graphs.
 Aim for 10-30 datapoints per series.`;
 
-function calcCost(u = {}) {
-  return (u.input_tokens||0)/1e6*1 + (u.output_tokens||0)/1e6*5 +
-         (u.cache_read_input_tokens||0)/1e6*0.1 + (u.cache_creation_input_tokens||0)/1e6*1.25;
+// ── Cost calculator ───────────────────────────────────────────────────────────
+function calcCost(u) {
+  if (!u) return 0;
+  return (u.input_tokens || 0) / 1e6 * 1.0
+       + (u.output_tokens || 0) / 1e6 * 5.0
+       + (u.cache_read_input_tokens || 0) / 1e6 * 0.10
+       + (u.cache_creation_input_tokens || 0) / 1e6 * 1.25;
 }
 
+// ── JSON extractor ────────────────────────────────────────────────────────────
 function extractJSON(text) {
-  const s = text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+  const s = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
   try { return JSON.parse(s); } catch {}
   const i = s.indexOf('{'), j = s.lastIndexOf('}');
-  if (i !== -1 && j > i) { try { return JSON.parse(s.slice(i, j+1)); } catch {} }
-  for (const m of [...(s.match(/\{[\s\S]+?\}/g)||[])].reverse()) {
-    try { const p = JSON.parse(m); if (p.labels||p.error) return p; } catch {}
+  if (i !== -1 && j > i) { try { return JSON.parse(s.slice(i, j + 1)); } catch {} }
+  for (const m of [...(s.match(/\{[\s\S]+?\}/g) || [])].reverse()) {
+    try { const p = JSON.parse(m); if (p.labels || p.error) return p; } catch {}
   }
   return null;
 }
 
-const H = (k) => ({
-  'Content-Type':'application/json','x-api-key':k,
-  'anthropic-version':'2023-06-01','anthropic-beta':'prompt-caching-2024-07-31'
-});
-const MODEL = 'claude-haiku-4-5-20251001';
+// ── Anthropic helpers ─────────────────────────────────────────────────────────
+function anthropicHeaders(apiKey) {
+  return {
+    'Content-Type': 'application/json',
+    'x-api-key': apiKey,
+    'anthropic-version': '2023-06-01',
+    'anthropic-beta': 'prompt-caching-2024-07-31'
+  };
+}
 
-async function callSearch(apiKey, prompt) {
+async function callWithSearch(apiKey, prompt) {
   return fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST', headers:H(apiKey),
+    method: 'POST',
+    headers: anthropicHeaders(apiKey),
     body: JSON.stringify({
-      model:MODEL, max_tokens:800,
-      system:[{type:'text',text:SYSTEM_PROMPT,cache_control:{type:'ephemeral'}}],
-      tools:[{type:'web_search_20250305',name:'web_search',max_uses:3}],
-      messages:[{role:'user',content:prompt}]
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 800,
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
+      messages: [{ role: 'user', content: prompt }]
     })
   });
 }
 
 async function callFix(apiKey, broken) {
   return fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST', headers:H(apiKey),
+    method: 'POST',
+    headers: anthropicHeaders(apiKey),
     body: JSON.stringify({
-      model:MODEL, max_tokens:800,
-      system:[{type:'text',text:SYSTEM_PROMPT,cache_control:{type:'ephemeral'}}],
-      messages:[{role:'user',content:`You returned malformed JSON. Previous response:\n\n${broken}\n\nReturn only valid JSON starting with { and ending with }. Nothing else.`}]
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 800,
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: `You returned malformed JSON. Previous response:\n\n${broken}\n\nReturn only valid JSON starting with { and ending with }. Nothing else.` }]
     })
   });
 }
@@ -91,77 +101,79 @@ async function callFix(apiKey, broken) {
 // ── Main handler ──────────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // 1. Verify Clerk token
+  // ── Auth ────────────────────────────────────────────────────────────────────
   const token = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
-
   let userId;
+  const isAnon = !token;
+
   if (token) {
-  // Signed-in user — verify token
     try {
-  const payload = await verifyToken(token, {
-    secretKey: process.env.CLERK_SECRET_KEY,
-  });
-  userId = payload.sub;
-} catch (err) {
-  console.error('Token verify failed:', err.message);
-  return res.status(401).json({ error: 'Session expired. Please sign in again.' });
-}
+      const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY });
+      userId = payload.sub;
+    } catch (err) {
+      console.error('Token verify failed:', err.message);
+      return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+    }
   } else {
-  // No token — anonymous trial request, rate limit by IP
+    // Anonymous trial — rate limit by IP
     userId = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
            || req.headers['x-real-ip']
            || 'anon';
   }
 
-  // 2. Rate limit by user ID
-  const { limited, remaining } = checkRate(userId);
+  // ── Rate limit ──────────────────────────────────────────────────────────────
+  const { limited, remaining } = checkRate(userId, isAnon);
   if (limited) {
-    return res.status(429).json({
-  error: `You've reached your limit of 5 free graphs today. Come back tomorrow!`
-});
+    const msg = isAnon
+      ? "You've used your free trial graph. Sign in for 5 graphs per day — free!"
+      : "You've made 5 graphs today. Come back tomorrow for more!";
+    return res.status(429).json({ error: msg });
+  }
 
-  // 3. Validate prompt
+  // ── Validate prompt ─────────────────────────────────────────────────────────
   const { prompt } = req.body || {};
   if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 3)
     return res.status(400).json({ error: 'A graph description is required.' });
   if (prompt.length > 600)
     return res.status(400).json({ error: 'Description too long (max 600 characters).' });
 
-  // 4. Check env vars
+  // ── Check env vars ──────────────────────────────────────────────────────────
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Server misconfiguration.' });
 
   let cost = 0;
 
   try {
-    // Attempt 1
-    const r1 = await callSearch(apiKey, prompt.trim());
+    // Attempt 1 — with web search
+    const r1 = await callWithSearch(apiKey, prompt.trim());
     if (!r1.ok) {
       console.error('Anthropic error:', r1.status);
       return res.status(502).json({ error: 'AI service error. Please try again.' });
     }
-    const d1 = await r1.json();
-    cost += calcCost(d1.usage);
-    const t1 = (d1.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    const p1 = t1 ? extractJSON(t1) : null;
+    const d1   = await r1.json();
+    cost      += calcCost(d1.usage);
+    const t1   = (d1.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const p1   = t1 ? extractJSON(t1) : null;
 
     if (p1 && !p1.error && p1.labels && p1.datasets)
       return res.status(200).json({ ...p1, estimatedCost: cost, remainingGraphs: remaining });
-    if (p1?.error) return res.status(422).json({ error: p1.error });
+    if (p1?.error)
+      return res.status(422).json({ error: p1.error });
 
-    // Attempt 2 — cheap fix
+    // Attempt 2 — cheap JSON fix, no web search
     console.warn('Attempt 1 parse failed, fixing...');
     const r2 = await callFix(apiKey, t1 || '(empty)');
     if (!r2.ok) return res.status(502).json({ error: 'Could not generate graph. Try rephrasing.' });
 
-    const d2 = await r2.json();
-    cost += calcCost(d2.usage);
-    const t2 = (d2.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-    const p2 = t2 ? extractJSON(t2) : null;
+    const d2   = await r2.json();
+    cost      += calcCost(d2.usage);
+    const t2   = (d2.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const p2   = t2 ? extractJSON(t2) : null;
 
     if (p2 && !p2.error && p2.labels && p2.datasets)
       return res.status(200).json({ ...p2, estimatedCost: cost, remainingGraphs: remaining });
@@ -174,4 +186,4 @@ module.exports = async function handler(req, res) {
     console.error('Unexpected error:', err);
     return res.status(500).json({ error: 'Server error. Please try again.' });
   }
-}
+};
