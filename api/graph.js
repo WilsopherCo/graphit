@@ -7,16 +7,18 @@ const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
 // ── Rate limiter — keyed by Clerk userId ──────────────────────────────────────
 const rateMap  = new Map();
-const MAX_REQS = 20;
-const WINDOW   = 60 * 60 * 1000; // 1 hour
+const MAX_REQS = 20;   // signed-in users
+const MAX_ANON = 1;    // anonymous trial
+const WINDOW   = 60 * 60 * 1000;
 
-function checkRate(key) {
+function checkRate(key, isAnon = false) {
+  const max   = isAnon ? MAX_ANON : MAX_REQS;
   const now   = Date.now();
   const entry = rateMap.get(key) || { count: 0, resetAt: now + WINDOW };
   if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + WINDOW; }
   entry.count++;
   rateMap.set(key, entry);
-  return { limited: entry.count > MAX_REQS, remaining: Math.max(0, MAX_REQS - entry.count) };
+  return { limited: entry.count > max, remaining: Math.max(0, max - entry.count) };
 }
 
 // ── System prompt ─────────────────────────────────────────────────────────────
@@ -97,15 +99,22 @@ export default async function handler(req, res) {
 
   // 1. Verify Clerk token
   const token = (req.headers['authorization'] || '').replace('Bearer ', '').trim();
-  if (!token) return res.status(401).json({ error: 'Sign in required.' });
 
   let userId;
-  try {
-    const payload = await clerk.verifyToken(token);
-    userId = payload.sub;
-  } catch (err) {
-    console.error('Token verify failed:', err.message);
-    return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+  if (token) {
+  // Signed-in user — verify token
+    try {
+      const payload = await clerk.verifyToken(token);
+      userId = payload.sub;
+    } catch (err) {
+      console.error('Token verify failed:', err.message);
+      return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+    }
+  } else {
+  // No token — anonymous trial request, rate limit by IP
+    userId = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+           || req.headers['x-real-ip']
+           || 'anon';
   }
 
   // 2. Rate limit by user ID
