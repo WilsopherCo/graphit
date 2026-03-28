@@ -1,7 +1,7 @@
 // api/graph.js — Graphit backend
 // Verifies Clerk session tokens. Rate limits per user ID (not IP).
 
-import { verifyToken } from '@clerk/backend';
+const { verifyToken } = require('@clerk/backend');
 
 // ── Rate limiter — keyed by Clerk userId ──────────────────────────────────────
 const rateMap  = new Map();
@@ -89,7 +89,7 @@ async function callFix(apiKey, broken) {
 }
 
 // ── Main handler ──────────────────────────────────────────────────────────────
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST');
