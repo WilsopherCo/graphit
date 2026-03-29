@@ -37,11 +37,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root{--bg:#09090f;--surface:#111118;--surface2:#1a1a26;--surface3:#20202e;--border:#2a2a3a;--border2:#3a3a50;--accent:#e8c84a;--accent-dim:rgba(232,200,74,0.12);--text:#e8e6f0;--text2:#b0aec8;--muted:#6b6a80;--success:#4af0a0;--error:#f05a4a;--error-dim:rgba(240,90,74,0.1);--header-h:54px;--tab-h:52px}
+:root{--bg:#09090f;--surface:#111118;--surface2:#1a1a26;--surface3:#20202e;--border:#2a2a3a;--border2:#3a3a50;--accent:#e8c84a;--accent-dim:rgba(232,200,74,0.12);--text:#e8e6f0;--text2:#c8c6e0;--muted:#9896b4;--success:#4af0a0;--error:#f05a4a;--error-dim:rgba(240,90,74,0.1);--header-h:54px;--tab-h:52px;--nav-bg:rgba(9,9,15,0.97)}
+[data-theme="light"]{--bg:#f0ede6;--surface:#e8e4db;--surface2:#ddd9d0;--surface3:#d4cfc6;--border:#c4bfb5;--border2:#b0aba0;--accent:#c8a832;--accent-dim:rgba(200,168,50,0.12);--text:#1a1820;--text2:#2e2c42;--muted:#525070;--success:#1a7a48;--error:#cc3a2a;--error-dim:rgba(204,58,42,0.1);--nav-bg:rgba(240,237,230,0.97)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;width:100%;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-weight:300;overflow:hidden}
+html,body{height:100%;width:100%;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-weight:300;overflow:hidden;transition:background 0.3s,color 0.3s}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(91,140,255,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(91,140,255,0.035) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
-header{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:rgba(9,9,15,0.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+header{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:var(--nav-bg);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);transition:background 0.3s}
 .logo{display:flex;align-items:baseline;gap:7px;text-decoration:none}
 .logo-name{font-family:'Playfair Display',serif;font-weight:900;font-size:1.4rem;color:var(--accent);letter-spacing:-0.5px}
 .logo-tag{font-family:'IBM Plex Mono',monospace;font-size:0.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:2px;border:1px solid var(--border);padding:2px 5px;border-radius:3px}
@@ -55,7 +56,7 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--header-h);di
 .user-avatar{width:22px;height:22px;border-radius:50%;background:var(--surface3);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--muted);flex-shrink:0}
 .user-avatar img{width:100%;height:100%;object-fit:cover}
 @media(max-width:480px){.graphs-remaining{display:none!important}}
-.tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;height:var(--tab-h);background:rgba(9,9,15,.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom);flex-direction:column}
+.tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;height:var(--tab-h);background:var(--nav-bg);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom);flex-direction:column}
 .tab-bar-inner{display:flex;height:52px}
 .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);transition:color .2s;position:relative}
 .tab-btn.active{color:var(--accent)}
@@ -189,6 +190,16 @@ textarea::placeholder{color:var(--muted)}
 .modal-ftr-note{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--muted)}
 .modal-confirm{background:var(--accent);color:#09090f;border:none;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-weight:500;font-size:.85rem;padding:10px 24px;cursor:pointer;transition:all .18s}
 .modal-confirm:hover{background:#f0d85a}
+
+/* ── THEME TOGGLE ── */
+.theme-toggle{background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer;width:34px;height:34px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.theme-toggle svg{width:15px;height:15px}
+.theme-toggle .icon-moon{display:block}
+.theme-toggle .icon-sun{display:none}
+[data-theme="light"] .theme-toggle .icon-moon{display:none}
+[data-theme="light"] .theme-toggle .icon-sun{display:block}
+[data-theme="light"] body::before{background-image:linear-gradient(rgba(91,140,255,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(91,140,255,0.06) 1px,transparent 1px)}
 @media(max-width:767px){:root{--header-h:52px}.tab-bar{display:flex}.app-body{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));flex-direction:column}.left-panel{width:100%;border-right:none;border-bottom:1px solid var(--border);flex:1;display:none}.left-panel.active{display:flex}.graph-panel{width:100%;flex:1;display:none}.graph-panel.active{display:flex}.graph-panel-header{padding:10px 16px;flex-wrap:wrap;gap:8px}.graph-title-area{flex-basis:100%}.graph-actions{margin-left:0}.graph-canvas-area{padding:16px}#source-strip{padding:8px 16px;flex-wrap:wrap}.ct-grid{grid-template-columns:repeat(2,1fr)}#ct-modal .modal{max-height:92vh}}
 @media(min-width:768px) and (max-width:1023px){.tab-bar{display:flex}.app-body{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));flex-direction:column}.left-panel{width:100%;border-right:none;flex:1;display:none}.left-panel.active{display:flex}.graph-panel{width:100%;flex:1;display:none}.graph-panel.active{display:flex}}
 @media(min-width:1024px){.app-body{flex-direction:row;bottom:0}.left-panel{display:flex!important;width:340px}.graph-panel{display:flex!important}.tab-bar{display:none!important}}
@@ -201,6 +212,10 @@ textarea::placeholder{color:var(--muted)}
   <div class="header-right">
     <div class="status-badge"><div class="status-dot"></div><span>AI + Live Data</span></div>
     <div class="graphs-remaining" id="graphs-remaining">20 graphs left</div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
     <div class="user-btn" id="user-btn" onclick="openUserMenu()">
       <div class="user-avatar" id="hdr-av">?</div>
       <span id="hdr-name">Account</span>
@@ -517,6 +532,18 @@ function addMsg(role,text,isErr=false){ const m=document.getElementById('chat-me
 function addThink(){ const m=document.getElementById('chat-messages'); const d=document.createElement('div'); d.className='message assistant'; d.innerHTML=`<span class="msg-label">Graphit</span><div class="thinking-dots"><span></span><span></span><span></span></div>`; m.appendChild(d); m.scrollTop=m.scrollHeight; return d; }
 function setLoad(s,lbl,sub){ isLoading=s; document.getElementById('send-btn').disabled=s; const o=document.getElementById('loading-overlay'); o.style.display=s?'flex':'none'; if(lbl) document.getElementById('loading-label').textContent=lbl; if(sub) document.getElementById('loading-sub').textContent=sub; }
 function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ── THEME TOGGLE ── */
+function toggleTheme() {
+  const html = document.documentElement;
+  const isLight = html.getAttribute('data-theme') === 'light';
+  html.setAttribute('data-theme', isLight ? '' : 'light');
+  localStorage.setItem('graphit-theme', isLight ? 'dark' : 'light');
+}
+(function() {
+  const saved = localStorage.getItem('graphit-theme');
+  if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+})();
 </script>
 
 <!-- Clerk loads AFTER all JS is defined — this is intentional -->
